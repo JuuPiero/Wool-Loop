@@ -166,17 +166,7 @@ export class Spool extends Clickable implements IGridItem {
             .parallel(
                 tween().to(0.28, { position: flyPos }, { easing: "quadOut" }),
                  tween(this.node).to(0.28, { eulerAngles : new Vec3(0, 0, 540) }, { easing: "quadOut" })
-                // ,
-                // tween(spin).to(0.36, { value: 1 }, {
-                //     easing: "quadInOut",
-                //     onUpdate: () => {
-                //         const tiltX = Math.sin(spin.value * Math.PI) * 22;
-                //         this.node.eulerAngles = new Vec3(baseEuler.x + tiltX, baseEuler.y, baseEuler.z + totalSpinZ * spin.value);
-                //     }
-                // })
-                ,
-                // tween().to(0.14, { scale: stretchScale }, { easing: "quadOut" })
-                    // .to(0.14, { scale: baseScale }, { easing: "quadIn" })
+               
             )
             .call(() => {
                 // this.node.eulerAngles = new Vec3(baseEuler.x, baseEuler.y, targetEndZ);
@@ -200,7 +190,6 @@ export class Spool extends Clickable implements IGridItem {
         this.slot.setProcess(0);
         this.spoolManager.remove(this);
         this.slot.spool = null;
-        // this.spoolManager.checkWin();
 
         EventBus.emit(GameEvent.COLLECT_DONE)
     }
@@ -272,8 +261,8 @@ export class Spool extends Clickable implements IGridItem {
 
         const startPos = this.node.position.clone();
         const baseScale = this.node.scale.clone();
-        const moveDuration = 0.24;
-        const jumpHeight = 2;
+        const moveDuration = 0.4;
+        const jumpHeight = 10;
         const progress = { value: 0 };
 
         Tween.stopAllByTarget(this.node);
@@ -562,8 +551,8 @@ export class Spool extends Clickable implements IGridItem {
                         item.setScale(1, 1, 1);
 
                         tween(item)
-                            .to(0.09, { scale: new Vec3(1.14, 1.14, 1.14) }, { easing: 'quadOut' })
-                            .to(0.1, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
+                            .to(0.2, { scale: new Vec3(1.3, 1.3, 1.3) }, { easing: 'quadOut' })
+                            .to(0.2, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
                             .start();
                     }
                 } else {

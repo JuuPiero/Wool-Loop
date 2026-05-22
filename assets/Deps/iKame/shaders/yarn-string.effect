@@ -49,7 +49,11 @@ CCProgram unlit-fs %{
   mediump float fill;
   };
 
-
+  mediump vec3 SetSaturation(mediump vec3 In, mediump float Saturation)
+  {
+    mediump float luma = dot(In, vec3(0.2126729, 0.7151522, 0.0721750));
+    return luma + Saturation * (In - luma);
+  }
   mediump vec4 frag () {
   mediump vec2 tiledUV = v_uv * tiling;
   mediump vec3 mask = texture(mainTexture, tiledUV).rgb;  
@@ -58,7 +62,7 @@ CCProgram unlit-fs %{
 	col += mask.y;
     col.a = 1.0;
 
-  //Effect
+  // Effect
   mediump float uv2 = v_uv.y ;
   mediump float fill2 = fill;
   if (fill > 1.0)
@@ -70,6 +74,14 @@ CCProgram unlit-fs %{
 	
 	if (alpha < 0.005) discard;
 
-	return CCFragOutput(col);
+  mediump vec3 diffuseColor = col.rgb;
+  mediump vec3 highlightColor = diffuseColor * 1.3 + 0.1;
+  mediump float highlightFactor = clamp(mask.y, 0.0, 1.0);
+  mediump vec3 litColor = mix(diffuseColor, highlightColor, highlightFactor);
+  mediump vec3 addedDiffuse = diffuseColor + 0.1;
+  mediump vec3 finalColor = litColor + addedDiffuse * highlightFactor;
+  finalColor = SetSaturation(finalColor, 2.3);
+
+	return CCFragOutput(vec4(finalColor, 1.0));
   }
 }%

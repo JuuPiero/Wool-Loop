@@ -643,7 +643,7 @@ export class RopeBezierWave3D extends Component {
         // renderers.forEach(renderer => {
         const mat = renderer.getMaterialInstance(0);
         mat.setProperty("mainColor", color);
-        mat.setProperty("shadowColor", darkenColor(color, 0.7));
+        mat.setProperty("shadowColor", color);
         // mat.setProperty("shadeColor1", this.darkenColor(this.color, 0.7));
         // mat.setProperty("shadeColor2", this.darkenColor(this.color, 0.9));
         // })
