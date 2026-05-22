@@ -158,7 +158,7 @@ CCProgram colors-fs %{
     vec3 addedDiffuse = diffuseColor + 0.1;
     vec3 finalColor   = litColor + addedDiffuse * maskFactor;
 
-    finalColor = SetSaturation(finalColor, 2.7);
+    finalColor = SetSaturation(finalColor, 2.3);
 
     return CCFragOutput(vec4(finalColor, 1.0));
   }

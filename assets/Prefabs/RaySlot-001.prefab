@@ -109,9 +109,9 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 6.3,
+      "x": 6.2,
       "y": 7,
-      "z": 7
+      "z": 7.2
     },
     "_mobility": 0,
     "_layer": 1073741824,
@@ -240,8 +240,6 @@
       "__id__": 0
     },
     "fileId": "c3Il7gkSVDX54UwI+XnsFS",
-    "instance": null,
-    "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
   },
   {
@@ -466,9 +464,9 @@
     },
     "_size": {
       "__type__": "cc.Vec3",
-      "x": 2.191,
+      "x": 2.464,
       "y": 0.792,
-      "z": 1
+      "z": 1.068
     },
     "_id": ""
   },

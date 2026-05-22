@@ -304,8 +304,11 @@ export class SpoolManager extends Component {
 
         SoundManager.instance.playOneShot(SOUNDS.CLICK);
         spool.shadow.active = false
-        spool.moveToSlot(slot, () => {
-            this.checkLose();
+
+        spool.playClickBounce(() => {
+            spool.moveToSlot(slot, () => {
+                this.checkLose();
+            });
         });
     }
 

@@ -75,7 +75,7 @@ export class Spool extends Clickable implements IGridItem {
     protected start(): void {
           this.isOpen = !this.isBlocked();
             if (this.isOpen) {
-                this.open();
+                this.open(false);
             } 
             else {
                 this.close();
@@ -142,13 +142,46 @@ export class Spool extends Clickable implements IGridItem {
         this.isFlying = true;
         SoundManager.instance.playOneShot('Success');
 
+        Tween.stopAllByTarget(this.node);
+
+        const ropeMat = this.rope.getComponent(MeshRenderer).getMaterialInstance(0);
+        Tween.stopAllByTarget(this.ropeFillTweenState);
+        this.ropeFillTweenState.value = 0;
+        ropeMat.setProperty('fill', 0);
+
         const effect = instantiate(ServiceLocator.get(GameConfig).completedEffect);
         effect.setParent(this.node);
 
+        const startPos = this.node.position.clone();
+        const flyPos = new Vec3(startPos.x, startPos.y + 5, startPos.z);
+        const baseScale = this.node.scale.clone();
+        const baseEuler = this.node.eulerAngles.clone();
+        const stretchScale = new Vec3(baseScale.x * 0.92, baseScale.y * 1.14, baseScale.z * 0.92);
+        const spin = { value: 0 };
+        const targetEndZ = 180;
+        const deltaToTargetZ = ((targetEndZ - baseEuler.z) % 360 + 360) % 360;
+        const totalSpinZ = 360 + deltaToTargetZ;
+
         tween(this.node)
-            .by(0.1, { eulerAngles: new Vec3(0, 0, -40) })
-            .by(0.1, { eulerAngles: new Vec3(0, 0, 20) })
-            .to(0.2, { scale: Vec3.ZERO }, { easing: "backIn" })
+            .parallel(
+                tween().to(0.28, { position: flyPos }, { easing: "quadOut" }),
+                 tween(this.node).to(0.28, { eulerAngles : new Vec3(0, 0, 540) }, { easing: "quadOut" })
+                // ,
+                // tween(spin).to(0.36, { value: 1 }, {
+                //     easing: "quadInOut",
+                //     onUpdate: () => {
+                //         const tiltX = Math.sin(spin.value * Math.PI) * 22;
+                //         this.node.eulerAngles = new Vec3(baseEuler.x + tiltX, baseEuler.y, baseEuler.z + totalSpinZ * spin.value);
+                //     }
+                // })
+                ,
+                // tween().to(0.14, { scale: stretchScale }, { easing: "quadOut" })
+                    // .to(0.14, { scale: baseScale }, { easing: "quadIn" })
+            )
+            .call(() => {
+                // this.node.eulerAngles = new Vec3(baseEuler.x, baseEuler.y, targetEndZ);
+            })
+            .to(0.14, { scale: Vec3.ZERO }, { easing: "backIn" })
             .call(() => this.finishSpool())
             .start();
 
@@ -181,6 +214,32 @@ export class Spool extends Clickable implements IGridItem {
         this.clickFunc?.()
     }
 
+    public playClickBounce(onDone?: Function) {
+        const baseScale = this.node.scale.clone();
+        const basePosition = this.node.position.clone();
+
+        // Squash & stretch: lún xuống ở trục giữa, nở nhẹ 2 bên.
+        const squashScale = new Vec3(baseScale.x * 1.13, baseScale.y * 0.82, baseScale.z * 1.13);
+        const squashPosition = new Vec3(basePosition.x, basePosition.y - 0.11, basePosition.z);
+        const reboundScale = new Vec3(baseScale.x * 0.97, baseScale.y * 1.06, baseScale.z * 0.97);
+
+        tween(this.node)
+            .to(0.06, {
+                scale: squashScale,
+                position: squashPosition,
+            }, { easing: 'quadOut' })
+            .to(0.08, {
+                scale: reboundScale,
+                position: basePosition,
+            }, { easing: 'quadInOut' })
+            .to(0.1, {
+                scale: baseScale,
+                position: basePosition,
+            }, { easing: 'backOut' })
+            .call(() => onDone?.())
+            .start();
+    }
+
     public activateNextSpools() {
         // position.x = col, position.y = row
         const right = this.spoolManager.getSpool(this.position.x + 1, this.position.y);
@@ -211,11 +270,44 @@ export class Spool extends Clickable implements IGridItem {
         const localTarget = new Vec3();
         this.node.parent!.inverseTransformPoint(localTarget, targetPos);
 
-        tween(this.node)
-            .to(0.2, {
-                position: localTarget,
-                eulerAngles: new Vec3(-90, 90, 90),
-            }, { easing: "quadOut" })
+        const startPos = this.node.position.clone();
+        const baseScale = this.node.scale.clone();
+        const moveDuration = 0.24;
+        const jumpHeight = 2;
+        const progress = { value: 0 };
+
+        Tween.stopAllByTarget(this.node);
+        this.node.eulerAngles = new Vec3(-90, 90, 90);
+
+        tween(progress)
+            .to(moveDuration, { value: 1 }, {
+                easing: "quadOut",
+                onUpdate: () => {
+                    const p = progress.value;
+                    Vec3.lerp(this.tempVec3, startPos, localTarget, p);
+
+                    // Arc jump path.
+                    this.tempVec3.y += Math.sin(p * Math.PI) * jumpHeight;
+                    this.node.setPosition(this.tempVec3);
+
+                    // Squash/stretch: squash at takeoff/landing, stretch in mid-air.
+                    const airborne = Math.sin(p * Math.PI);
+                    const edge = 1 - airborne;
+                    const scaleYFactor = 1 + airborne * 0.14 - edge * 0.09;
+                    const scaleXZFactor = 1 - airborne * 0.06 + edge * 0.11;
+
+                    this.node.setScale(
+                        baseScale.x * scaleXZFactor,
+                        baseScale.y * scaleYFactor,
+                        baseScale.z * scaleXZFactor
+                    );
+                }
+            })
+            .call(() => {
+                this.node.setPosition(localTarget);
+                this.node.setScale(baseScale);
+                this.node.eulerAngles = new Vec3(-90, 90, 90);
+            })
             .call(() => {
 
                 this.syncWoolsView()
@@ -259,15 +351,82 @@ export class Spool extends Clickable implements IGridItem {
     @property(RaySlot)
     public queue: RaySlot[] = [];
     private flipScaleDirection: boolean = false;
+    private fullScalePulsePlayed: boolean[] = [];
+    private ropeFillTweenState: { value: number } = { value: 0 };
 
     @property public collectDelay = 0.05
+
+    private getRopeEndTargetByCount(count: number): Vec3 {
+        if (!this.woolsView.length || this.capacity <= 0) {
+            return this.rope.endPoint.worldPosition.clone();
+        }
+
+        const capacityPerItem = this.capacity / this.woolsView.length;
+        if (capacityPerItem <= 0) {
+            return this.rope.endPoint.worldPosition.clone();
+        }
+
+        const slotIndex = Math.max(0, Math.min(
+            this.woolsView.length - 1,
+            Math.floor((Math.max(1, count) - 1) / capacityPerItem)
+        ));
+
+        return this.woolsView[slotIndex].worldPosition.clone();
+    }
+
+    private animateRopeFill(mat: any, to: number, duration: number): Promise<void> {
+        Tween.stopAllByTarget(this.ropeFillTweenState);
+        return new Promise<void>((resolve) => {
+            tween(this.ropeFillTweenState)
+                .to(duration, { value: to }, {
+                    easing: 'quadInOut',
+                    onUpdate: () => {
+                        mat.setProperty('fill', this.ropeFillTweenState.value);
+                    }
+                })
+                .call(() => {
+                    mat.setProperty('fill', to);
+                    resolve();
+                })
+                .start();
+        });
+    }
+
+    private primeRopeCollectStart() {
+        if (!this.queue.length) return;
+
+        this.queue.sort((a, b) => b.index - a.index);
+        const firstItem = this.queue.find(item => item?.wool);
+        if (!firstItem || !firstItem.wool) return;
+
+        this.rope.startPoint.setWorldPosition(firstItem.wool.startPoint.worldPosition);
+        this.rope.endPoint.setWorldPosition(this.getRopeEndTargetByCount(this.count + 1));
+        this.rope.initIfNeeded(true);
+    }
 
     public async collects() {
         if (this.isCollecting) return;
         this.isCollecting = true;
-        this.rope.node.active = true;
+        this.queue = this.queue.filter(item => !!item?.wool);
+
         const mat = this.rope.getComponent(MeshRenderer).getMaterialInstance(0);
-        mat.setProperty('fill', 1);
+        if (this.queue.length === 0) {
+            Tween.stopAllByTarget(this.ropeFillTweenState);
+            this.ropeFillTweenState.value = 0;
+            mat.setProperty('fill', 0);
+            this.rope.node.active = false;
+
+            this.isCollecting = false;
+            ServiceLocator.get(WoolManager).setCollecting(false);
+            ServiceLocator.get(SpoolManager).checkLose();
+            return;
+        }
+
+        this.rope.node.active = true;
+        this.primeRopeCollectStart();
+        this.ropeFillTweenState.value = 0;
+        mat.setProperty('fill', 0);
+        await this.animateRopeFill(mat, 1, 0.14);
         this.startWiggle();
 
         const woolManager = ServiceLocator.get(WoolManager);
@@ -311,6 +470,10 @@ export class Spool extends Clickable implements IGridItem {
                 }, { easing: 'quadIn' })
                 .start();
 
+            const ropeEndStart = this.rope.endPoint.worldPosition.clone();
+            const ropeEndTarget = this.getRopeEndTargetByCount(this.count);
+            const ropeEndLerp = new Vec3();
+
             let t = { value: 0 };
             tween(t)
                 .to(animDuration, { value: 1 }, {
@@ -318,7 +481,10 @@ export class Spool extends Clickable implements IGridItem {
                     onUpdate: () => {
                         if (!item.wool) return;
                         Vec3.lerp(this.tempVec3, start, woolTargetPos, t.value);
-                        this.rope.endPoint.setWorldPosition(this.tempVec3);
+                        this.rope.startPoint.setWorldPosition(this.tempVec3);
+
+                        Vec3.lerp(ropeEndLerp, ropeEndStart, ropeEndTarget, t.value);
+                        this.rope.endPoint.setWorldPosition(ropeEndLerp);
                     }
                 })
                 .start();
@@ -336,13 +502,18 @@ export class Spool extends Clickable implements IGridItem {
         }
 
         this.stopWiggle();
-        mat.setProperty('fill', 0);
+        await this.animateRopeFill(mat, 0, 0.24);
         this.isCollecting = false;
         woolManager.setCollecting(false); // Thông báo kết thúc thu dây
-        if (!this.isFull()) {
-            ServiceLocator.get(SpoolManager).checkLose();
+
+        if (this.isFull()) {
+            this.releaseRemainingQueue();
+            this.collectedDone();
+            return;
         }
-        // SỬA TẠI ĐÂY: Trả lại các item dư thừa cho MatchZone
+
+        ServiceLocator.get(SpoolManager).checkLose();
+        
         if (this.queue.length > 0) {
             const matchZone = ServiceLocator.get(MatchZone);
 
@@ -370,6 +541,10 @@ export class Spool extends Clickable implements IGridItem {
     public syncWoolsView() {
         if (!this.node || !this.woolsView.length || this.capacity <= 0) return;
 
+        if (this.fullScalePulsePlayed.length !== this.woolsView.length) {
+            this.fullScalePulsePlayed = new Array(this.woolsView.length).fill(false);
+        }
+
         const capacityPerItem = this.capacity / this.woolsView.length;
         if (capacityPerItem <= 0) return; // Tránh division by zero
 
@@ -380,21 +555,31 @@ export class Spool extends Clickable implements IGridItem {
 
             item.active = ratio > 0;
             if (item.active) {
-                item.setScale(ratio, ratio, ratio);
+                if (ratio >= 1) {
+                    if (!this.fullScalePulsePlayed[i]) {
+                        this.fullScalePulsePlayed[i] = true;
+                        Tween.stopAllByTarget(item);
+                        item.setScale(1, 1, 1);
+
+                        tween(item)
+                            .to(0.09, { scale: new Vec3(1.14, 1.14, 1.14) }, { easing: 'quadOut' })
+                            .to(0.1, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
+                            .start();
+                    }
+                } else {
+                    this.fullScalePulsePlayed[i] = false;
+                    Tween.stopAllByTarget(item);
+                    item.setScale(ratio, ratio, ratio);
+                }
             } else {
+                this.fullScalePulsePlayed[i] = false;
+                Tween.stopAllByTarget(item);
                 item.setScale(Vec3.ZERO);
             }
         }
 
         if (this.slot) {
             this.slot.setProcess(Math.round(this.count / this.capacity * 100));
-        }
-        if (this.isFull()) {
-            // 1. Giải phóng các item còn dư trong queue ngay lập tức
-            this.releaseRemainingQueue();
-
-            // 2. Chạy animation biến mất
-            this.collectedDone();
         }
     }
 
@@ -417,10 +602,13 @@ export class Spool extends Clickable implements IGridItem {
         matchZone.checkExistingItems();
     }
 
-    public open() {
+    public open(playAnim: boolean = true) {
         if (this.isInSlot) return;
         this.setRendererActive(true);
         this.woolsView.forEach(item => item.active = false);
+        if (playAnim) {
+            this.playClickBounce();
+        }
     }
 
     public close() {
