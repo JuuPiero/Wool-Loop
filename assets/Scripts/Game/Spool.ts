@@ -66,6 +66,7 @@ export class Spool extends Clickable implements IGridItem {
     public rope: RopeBezierWave3D;
 
     public isOpen: boolean = false;
+    public isSpawning: boolean = false;
     @property(Node) public shadow: Node = null
     protected onLoad(): void {
         this.rope = this.getComponentInChildren(RopeBezierWave3D)!;
@@ -73,13 +74,13 @@ export class Spool extends Clickable implements IGridItem {
         this.baseRotation = new Vec3(-90, 90, 90)
     }
     protected start(): void {
-          this.isOpen = !this.isBlocked();
-            if (this.isOpen) {
-                this.open(false);
-            } 
-            else {
-                this.close();
-            }
+        this.isOpen = !this.isBlocked();
+        if (this.isOpen) {
+            this.open(false);
+        }
+        else {
+            this.close();
+        }
     }
 
     public init(data: GridSlotData, spoolManager: SpoolManager, onClick?: Function) {
@@ -93,7 +94,7 @@ export class Spool extends Clickable implements IGridItem {
         this.node.name = `Spool_(${data.x}, ${data.y})`;
         this.clickFunc = onClick;
         this.setColor(data.colorId);
-      
+
     }
 
     public setColor(colorId: number) {
@@ -154,23 +155,12 @@ export class Spool extends Clickable implements IGridItem {
 
         const startPos = this.node.position.clone();
         const flyPos = new Vec3(startPos.x, startPos.y + 5, startPos.z);
-        const baseScale = this.node.scale.clone();
-        const baseEuler = this.node.eulerAngles.clone();
-        const stretchScale = new Vec3(baseScale.x * 0.92, baseScale.y * 1.14, baseScale.z * 0.92);
-        const spin = { value: 0 };
-        const targetEndZ = 180;
-        const deltaToTargetZ = ((targetEndZ - baseEuler.z) % 360 + 360) % 360;
-        const totalSpinZ = 360 + deltaToTargetZ;
 
         tween(this.node)
             .parallel(
                 tween().to(0.28, { position: flyPos }, { easing: "quadOut" }),
-                 tween(this.node).to(0.28, { eulerAngles : new Vec3(0, 0, 540) }, { easing: "quadOut" })
-               
+                tween(this.node).to(0.28, { eulerAngles: new Vec3(0, 0, 540) }, { easing: "quadOut" })
             )
-            .call(() => {
-                // this.node.eulerAngles = new Vec3(baseEuler.x, baseEuler.y, targetEndZ);
-            })
             .to(0.14, { scale: Vec3.ZERO }, { easing: "backIn" })
             .call(() => this.finishSpool())
             .start();
@@ -203,10 +193,17 @@ export class Spool extends Clickable implements IGridItem {
         this.clickFunc?.()
     }
 
+    // private bouceTween: Tween<Node> | null = null;
+    private isBocuncePlaying: boolean = false;
     public playClickBounce(onDone?: Function) {
+        if (this.isBocuncePlaying) return;
         const baseScale = this.node.scale.clone();
+        // if (baseScale.x === 0 && baseScale.y === 0 && baseScale.z === 0) {
+        //     onDone?.();
+        //     return;
+        // }
         const basePosition = this.node.position.clone();
-
+        this.isBocuncePlaying = true;
         // Squash & stretch: lún xuống ở trục giữa, nở nhẹ 2 bên.
         const squashScale = new Vec3(baseScale.x * 1.13, baseScale.y * 0.82, baseScale.z * 1.13);
         const squashPosition = new Vec3(basePosition.x, basePosition.y - 0.11, basePosition.z);
@@ -225,8 +222,12 @@ export class Spool extends Clickable implements IGridItem {
                 scale: baseScale,
                 position: basePosition,
             }, { easing: 'backOut' })
-            .call(() => onDone?.())
-            .start();
+            .call(() => {
+                this.isBocuncePlaying = false;
+                onDone?.()
+            })
+        .start();
+        // this.bouceTween?.start();
     }
 
     public activateNextSpools() {
@@ -266,7 +267,11 @@ export class Spool extends Clickable implements IGridItem {
         const progress = { value: 0 };
 
         Tween.stopAllByTarget(this.node);
-        this.node.eulerAngles = new Vec3(-90, 90, 90);
+        // this.node.eulerAngles = new Vec3(-90, 90, 90);
+
+        tween(this.node).to(0.4, {
+            eulerAngles: new Vec3(-90, 90, 90)
+        }).start();
 
         tween(progress)
             .to(moveDuration, { value: 1 }, {
@@ -292,10 +297,11 @@ export class Spool extends Clickable implements IGridItem {
                     );
                 }
             })
+
             .call(() => {
                 this.node.setPosition(localTarget);
                 this.node.setScale(baseScale);
-                this.node.eulerAngles = new Vec3(-90, 90, 90);
+                // this.node.eulerAngles = new Vec3(-90, 90, 90);
             })
             .call(() => {
                 this.syncWoolsView()
@@ -316,8 +322,6 @@ export class Spool extends Clickable implements IGridItem {
                     itemsInMatchZone.delete(raySlot);
                 }
 
-                // Do not recompute reachability while this spool is still present in the grid.
-                // Reachable open state should be updated only after the spool is removed.
                 this.collects()
                 Spool.delay = false
                 onDone?.()
@@ -501,7 +505,7 @@ export class Spool extends Clickable implements IGridItem {
         }
 
         ServiceLocator.get(SpoolManager).checkLose();
-        
+
         if (this.queue.length > 0) {
             const matchZone = ServiceLocator.get(MatchZone);
 
@@ -524,7 +528,6 @@ export class Spool extends Clickable implements IGridItem {
     }
 
     delay(time: number) { return new Promise(resolve => { this.scheduleOnce(resolve, time); }); }
-
 
     public syncWoolsView() {
         if (!this.node || !this.woolsView.length || this.capacity <= 0) return;
@@ -614,13 +617,9 @@ export class Spool extends Clickable implements IGridItem {
     public setRendererActive(active: boolean) {
         this.renderers.forEach(renderer => {
             renderer.node.active = active;
-
             const mat = renderer.getMaterialInstance(0);
-
             // mat.setProperty("_Color", this.color);
             mat.setProperty("color", this.color);
-
-
             if (active) {
                 mat.setProperty('lineWidth', 50);
             } else {

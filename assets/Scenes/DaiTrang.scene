@@ -5178,6 +5178,7 @@
     },
     "raySlots": [],
     "barrier": null,
+    "maxShow": 5,
     "_id": "37NIEsKdNNCaLydQTgYFRk"
   },
   {
@@ -5282,6 +5283,7 @@
     },
     "raySlots": [],
     "barrier": null,
+    "maxShow": 5,
     "_id": "8cHjJq4blHioXgIe7bkiJr"
   },
   {

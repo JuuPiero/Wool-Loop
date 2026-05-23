@@ -123,6 +123,7 @@ export class Pipeline extends Component implements IGridItem {
                 y: this.currentSpool.position.y,
                 colorId: colorId
             }, this.spoolManager)
+            spool.isSpawning = true;
 
             // Tween scale từ 0 lên 1, sau khi xong mới open để playClickBounce capture đúng scale
             tween(node)
@@ -133,6 +134,7 @@ export class Pipeline extends Component implements IGridItem {
                     easing: 'backOut'
                 })
                 .call(() => {
+                    spool.isSpawning = false;
                     spool.isOpen = true;
                     spool.isInSlot = false;
                     spool.open();

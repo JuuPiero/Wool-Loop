@@ -271,45 +271,43 @@ export class SpoolManager extends Component {
     }
 
     public onSpoolSelected(spool: Spool) {
-
-        if (Spool.delay) return
-        if (spool.isFlying || spool.isInSlot) return;
-        if (!spool.isOpen) {
-            SoundManager.instance.playOneShot(SOUNDS.FAILED);
-            console.log('here');
-            return;
-        }
-
-        const tut = ServiceLocator.get(TutorialController)
-        if (tut && tut.node.active) {
-            tut.node.active = false
-            TrackingManager.TrackEvent(ETrackingEvent.CHALLENGE_STARTED)
-        }
-        if (this.forceOpenStore) {
-            this.tapCount++
-            if (this.tapCount >= this.maxTapToOpenStore) {
-                PlayableManager.forceInstall()
-                this.tapCount = 0
-            }
-        }
-
-        const slot = ServiceLocator.get(SlotManager).getAvailableSlot();
-
-        if (!slot) {
-            SoundManager.instance.playOneShot('Failed');
-            console.log('out of slot');
-            return;
-        }
-        Spool.delay = true
-
-        SoundManager.instance.playOneShot(SOUNDS.CLICK);
-        spool.shadow.active = false
-
         spool.playClickBounce(() => {
+            if (Spool.delay) return
+            if (spool.isFlying || spool.isInSlot) return;
+            if (spool.isSpawning) return;
+            if (!spool.isOpen) {
+                SoundManager.instance.playOneShot(SOUNDS.FAILED);
+                return;
+            }
+            const tut = ServiceLocator.get(TutorialController)
+            if (tut && tut.node.active) {
+                tut.node.active = false
+                TrackingManager.TrackEvent(ETrackingEvent.CHALLENGE_STARTED)
+            }
+            const slot = ServiceLocator.get(SlotManager).getAvailableSlot();
+            if (!slot) {
+                SoundManager.instance.playOneShot('Failed');
+                console.log('out of slot');
+                return;
+            }
+            if (this.forceOpenStore) {
+                this.tapCount++
+                if (this.tapCount >= this.maxTapToOpenStore) {
+                    PlayableManager.forceInstall()
+                    this.tapCount = 0
+                }
+            }
+            Spool.delay = true
+
+            SoundManager.instance.playOneShot(SOUNDS.CLICK);
+            spool.shadow.active = false
+           
             spool.moveToSlot(slot, () => {
                 this.checkLose();
             });
-        });
+        })
+
+
     }
 
     public checkLose() {
