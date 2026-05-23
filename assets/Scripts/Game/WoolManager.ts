@@ -79,10 +79,15 @@ export class WoolManager extends Component {
 
     public init(newLevelData: LevelData, colorConfig: PlayableColorConfig) {
 
+
         this.slots = [];
 
         const mainSplineItems = newLevelData.mainConveyor.colorIds;
         const repeatCount = 10;
+
+        const mainConveyorCount = repeatCount * newLevelData.mainConveyor.colorIds.length;
+        this.splineInstantiate.count = mainConveyorCount;
+        this.splineInstantiate.init();
 
         // MAIN CONVEYOR
         for (let i = 0; i < mainSplineItems.length; i++) {
@@ -109,27 +114,27 @@ export class WoolManager extends Component {
         const subRaysData = newLevelData.conveyors;
 
         for (let i = 0; i < subRaysData.length; i++) {
-
             const subRay = this.subRays[i];
             const subRayData = subRaysData[i];
+            subRay.init(subRayData, colorConfig);
 
-            for (let j = 0; j < subRayData.colorIds.length; j++) {
+            // for (let j = 0; j < subRayData.colorIds.length; j++) {
 
-                const colorId = subRayData.colorIds[j];
+            //     const colorId = subRayData.colorIds[j];
 
-                for (let k = 0; k < repeatCount; k++) {
+            //     for (let k = 0; k < repeatCount; k++) {
 
-                    const slotIndex = j * repeatCount + k;
+            //         const slotIndex = j * repeatCount + k;
 
-                    if (slotIndex >= subRay.raySlots.length) break;
+            //         if (slotIndex >= subRay.raySlots.length) break;
 
-                    const raySlot: RaySlot = subRay.raySlots[slotIndex];
+            //         const raySlot: RaySlot = subRay.raySlots[slotIndex];
 
-                    raySlot.wool.setColor(
-                        colorConfig.getMainColor(colorId)
-                    );
-                }
-            }
+            //         raySlot.wool.setColor(
+            //             colorConfig.getMainColor(colorId)
+            //         );
+            //     }
+            // }
         }
 
         if (this.splineInstantiate) {

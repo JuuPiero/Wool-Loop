@@ -1,4 +1,4 @@
-import { _decorator, CCBoolean, Color, Component, EventKeyboard, Input, input, JsonAsset, KeyCode, Node, sys } from 'cc';
+import { _decorator, CCBoolean, Color, Component, EventKeyboard, Input, input, instantiate, JsonAsset, KeyCode, Node, sys } from 'cc';
 import { GameConfig } from './GameConfigSA';
 import { ServiceLocator } from '../ServiceLocator';
 import { EventBus } from '../EventBus';
@@ -119,6 +119,12 @@ export class GameManager extends Component {
 
 
         TrackingManager.TrackEvent(ETrackingEvent.LOADING)
+        if(this.currentLevelData.splines) {
+            const splinesNode = instantiate(this.currentLevelData.splines)
+            splinesNode.setParent(this.node)
+            this.woolManager = splinesNode.getComponent(WoolManager)
+        }
+
         this.woolManager.init(this.levelData, this.colorConfig)
         this.spoolManager.init(this.levelData, this.colorConfig)
         this.slotManager.init(this.levelData)

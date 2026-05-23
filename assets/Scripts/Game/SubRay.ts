@@ -7,6 +7,9 @@ import { GameManager, GameState } from './GameManager';
 import { ServiceLocator } from '../ServiceLocator';
 import { SpoolManager } from './SpoolManager';
 import { Barrier } from './Barrier';
+import { ConveyorData } from './LevelDataSA';
+import { PlayableColorConfig } from '../Data/ColorConfig';
+import { SEGMENT_COUNT } from './Constants/Constants';
 const { ccclass, property } = _decorator;
 
 @ccclass('SubRay')
@@ -14,11 +17,8 @@ export class SubRay extends Component {
 
     @property(Spline)
     public spline: Spline;
-    @property(SplineInstantiate)
-    public splineInstantiate: SplineInstantiate;
-    @property(BoxCollider)
-    public rayTrigger: BoxCollider
-
+    @property(SplineInstantiate) public splineInstantiate: SplineInstantiate;
+    @property(BoxCollider) public rayTrigger: BoxCollider
 
     public gameManager: GameManager = null
 
@@ -28,6 +28,8 @@ export class SubRay extends Component {
     public raySlots: RaySlot[] = []
 
     @property(Barrier) public barrier: Barrier = null
+
+    @property public maxShow = 5
 
     private _closeBarrierCb = () => { this.barrier?.close(); };
 
@@ -43,11 +45,37 @@ export class SubRay extends Component {
 
     protected start(): void {
         this.gameManager = ServiceLocator.get(GameManager)
-        this.splineInstantiate.items.forEach(item => {
-            this.raySlots.push(item.getComponent(RaySlot))
-            item.getComponent(Collider).destroy()
-        })
 
+    }
+
+    public init(data: ConveyorData, colorConfig: PlayableColorConfig) {
+        const count = data.colorIds.length * SEGMENT_COUNT; // Lặp lại 10 lần cho đủ dài
+        this.splineInstantiate.count = count;
+        this.splineInstantiate.init();
+
+        this.raySlots = [];
+        this.splineInstantiate.items.forEach(item => {
+            const slot = item.getComponent(RaySlot);
+            this.raySlots.push(slot);
+            item.getComponent(Collider).destroy();
+        });
+
+        const visibleCount = Math.min(this.maxShow * SEGMENT_COUNT, this.raySlots.length);
+
+        for (let j = 0; j < data.colorIds.length; j++) {
+            const colorId = data.colorIds[j];
+
+            for (let k = 0; k < SEGMENT_COUNT; k++) {
+                const slotIndex = j * SEGMENT_COUNT + k;
+                if (slotIndex >= this.raySlots.length) break;
+
+                const raySlot: RaySlot = this.raySlots[slotIndex];
+                if (!raySlot.wool) continue;
+
+                raySlot.wool.setColor(colorConfig.getMainColor(colorId));
+                raySlot.wool.node.active = slotIndex < visibleCount;
+            }
+        }
     }
 
     protected onDestroy(): void {
@@ -128,6 +156,7 @@ export class SubRay extends Component {
             wool.node.setParent(current.node);
             wool.node.setWorldPosition(startWorldPos);
             wool.node.setWorldRotation(startWorldRot);
+            wool.node.active = true;
 
             // 2. TÍNH TOÁN KHOẢNG CÁCH (DISTANCE) - Đã sửa cho gọn
             const startDistance = sourceAnim.getDistance();

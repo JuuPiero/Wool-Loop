@@ -298,7 +298,6 @@ export class Spool extends Clickable implements IGridItem {
                 this.node.eulerAngles = new Vec3(-90, 90, 90);
             })
             .call(() => {
-
                 this.syncWoolsView()
                 this.isFlying = false
                 this.slot = slot

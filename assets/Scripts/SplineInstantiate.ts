@@ -34,6 +34,9 @@ export class SplineInstantiate extends Component {
             this.parentNode = this.node.scene!;
         }
 
+    }
+
+    public init() {
         this.instantiateAlongSpline();
     }
 
