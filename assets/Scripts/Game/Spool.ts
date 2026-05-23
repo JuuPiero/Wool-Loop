@@ -550,9 +550,16 @@ export class Spool extends Clickable implements IGridItem {
                         Tween.stopAllByTarget(item);
                         item.setScale(1, 1, 1);
 
+                        const currentEuler = item.eulerAngles.clone();
                         tween(item)
-                            .to(0.2, { scale: new Vec3(1.3, 1.3, 1.3) }, { easing: 'quadOut' })
-                            .to(0.2, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
+                            .to(0.2, {
+                                scale: new Vec3(1.3, 1.3, 1.3),
+                                eulerAngles: new Vec3(currentEuler.x, currentEuler.y + 180, currentEuler.z)
+                            }, { easing: 'quadOut' })
+                            .to(0.2, {
+                                scale: new Vec3(1, 1, 1),
+                                eulerAngles: new Vec3(currentEuler.x, currentEuler.y + 360, currentEuler.z)
+                            }, { easing: 'backOut' })
                             .start();
                     }
                 } else {

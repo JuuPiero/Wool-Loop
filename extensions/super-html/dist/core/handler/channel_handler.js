@@ -71,14 +71,24 @@ class channel_handler {
             // html文件名
             var s_html_name = d_channel.s_html_name;
             {
-                if (s_html_name) {
-                    s_html_name = `${s_channel_name}.html`;
+                if (s_channel_name == "applovin") {
+                    // applovin: không có tên mạng trong tên file
+                    s_html_name = '';
                 }
                 else {
-                    s_html_name = `${s_channel_name}.html`;
+                    if (s_html_name) {
+                        s_html_name = `${s_channel_name}_${s_html_name}.html`;
+                    }
+                    else {
+                        s_html_name = `${s_channel_name}.html`;
+                    }
                 }
                 if (d_hot.s_title) {
-                    s_html_name = `${d_hot.s_title}.html`;
+                    if(s_html_name){
+                        s_html_name = `${d_hot.s_title}_${s_html_name}`;
+                    }else{
+                        s_html_name = `${d_hot.s_title}.html`;
+                    }
                 }
             }
             // zip文件名
@@ -91,7 +101,7 @@ class channel_handler {
                     s_zip_name = `${s_channel_name}.zip`;
                 }
                 if (d_hot.s_title) {
-                    s_zip_name = `${d_hot.s_title}_${s_zip_name}.zip`;
+                    s_zip_name = `${d_hot.s_title}_${s_zip_name}`;
                 }
             }
             // #### 渠道脚本
@@ -100,7 +110,7 @@ class channel_handler {
                 // unity 需要设置商店地址，脚本被压缩或混淆了，需要提取出来给平台正则匹配
                 if (config_1.default.d_hot.s_unity_inject_html) {
                     if (s_channel_meta) {
-                        s_channel_meta = config_1.default.d_hot.s_unity_inject_html;
+                        s_channel_meta = config_1.default.d_hot.s_unity_inject_html + "\n" + s_channel_meta;
                     }
                     else {
                         s_channel_meta = config_1.default.d_hot.s_unity_inject_html;
@@ -204,8 +214,7 @@ class channel_handler {
         if (!s_content)
             return s_html_content;
         s_content = `<script type="text/javascript">\n${s_content}\n</script>`;
-        var lastContent = s_content;
-        return s_html_content.replace("</body>", () => `${lastContent}\n</body>`);
+        return s_html_content.replace("</body>", () => `${s_content}\n</body>`);
     }
     //获得压缩库脚本
     _get_zip_script() {
@@ -213,26 +222,21 @@ class channel_handler {
     }
     //获得通用脚本 
     _get_common_script(s_channel_name) {
-
-
         const s_base = `window.super_html_channel = "${s_channel_name}";`;
         const s_pre_load_script = `window.super_pre_load_script = ${JSON.stringify(config_1.default.d_hot.l_pre_load_script)};`;
         // #### 各个版本适配文件
         const s_version_adapter_body = utils_1.default.get_json(config_1.default.constants.inject_version_adapter[config_1.default.version]);
-        const s_common = utils_1.default.get_json(config_1.default.constants.inject_common_script);
-
-        // Get settings as JSON
         var settingPA = this.JsonData();
-        
-        return s_base + settingPA + s_pre_load_script + s_version_adapter_body + s_common ;
+        const s_common = utils_1.default.get_json(config_1.default.constants.inject_common_script);
+         return s_base + settingPA + s_pre_load_script + s_version_adapter_body + s_common ;
     }
 
     JsonData(){
         var jsonData = `window.jsonData = '';`;
         var currentPoint = `window.currentPoint = '';`;
         var stateGame = `window.stateGame = '';`;   
-    return jsonData + currentPoint + stateGame;
-}
+        return jsonData + currentPoint + stateGame;
+    }
 
     //获得渠道脚本 
     _get_channel_script(s_channel_name, s_file_name) {

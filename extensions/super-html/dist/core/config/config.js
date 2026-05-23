@@ -82,7 +82,102 @@ class config {
                 s_name: "applovin",
                 b_enable: true,
                 b_html_compression: true,
-            }
+            },
+            {
+                s_name: "ironsource",
+                b_enable: true,
+                b_html_compression: true,
+            },
+            {
+                s_name: "mintegral",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+            },
+            {
+                s_name: "unity",
+                b_enable: true,
+                b_html_compression: true,
+            },
+            {
+                s_name: "google",
+                s_config_name: "google",
+                b_enable: true,
+                b_html_compression: true,
+                b_out_zip: true,
+            },
+            {
+                s_name: "facebook",
+                s_config_name: "facebook",
+                b_enable: true,
+                b_html_compression: true,
+            },
+            {
+                s_name: "facebook",
+                s_config_name: "facebook",
+                b_enable: true,
+                b_html_compression: true,
+                b_out_zip: true,
+                b_split_res: true
+            },
+            {
+                s_name: "pangle",
+                s_config_name: "pangle",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+            },
+            {
+                s_name: "pangle",
+                s_config_name: "pangle_portrait",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+                s_zip_name: "portrait",
+            },
+            {
+                s_name: "pangle",
+                s_config_name: "pangle_landscape",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+                s_zip_name: "landscape",
+            },
+            {
+                s_name: "liftoff",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+            },
+            {
+                s_name: "moloco",
+                b_enable: true,
+                b_html_compression: true,
+            },
+            {
+                s_name: "tiktok",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+            },
+            {
+                s_name: "vungle",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+            },
+            {
+                s_name: "bigo",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+            },
+            {
+                s_name: "kwai",
+                b_enable: true,
+                b_html_compression: false,
+                b_out_zip: true,
+            },
         ];
         this.d_hot = new hot_data();
     }
