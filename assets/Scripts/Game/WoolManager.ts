@@ -20,8 +20,8 @@ export class WoolManager extends Component {
     @property({ type: SplineInstantiate, tooltip: "Reference đến SplineInstantiate" })
     public splineInstantiate: SplineInstantiate = null!;
 
-    @property({})
-    public speed: number = 5;
+
+    @property public speed: number = 5;
 
     @property({ tooltip: "Tự động di chuyển khi start" })
     public autoMove: boolean = true;
@@ -118,23 +118,7 @@ export class WoolManager extends Component {
             const subRayData = subRaysData[i];
             subRay.init(subRayData, colorConfig);
 
-            // for (let j = 0; j < subRayData.colorIds.length; j++) {
-
-            //     const colorId = subRayData.colorIds[j];
-
-            //     for (let k = 0; k < repeatCount; k++) {
-
-            //         const slotIndex = j * repeatCount + k;
-
-            //         if (slotIndex >= subRay.raySlots.length) break;
-
-            //         const raySlot: RaySlot = subRay.raySlots[slotIndex];
-
-            //         raySlot.wool.setColor(
-            //             colorConfig.getMainColor(colorId)
-            //         );
-            //     }
-            // }
+           
         }
 
         if (this.splineInstantiate) {
@@ -144,6 +128,7 @@ export class WoolManager extends Component {
                 this.startMoving();
             }
         }
+        
     }
 
     private collectingCount: number = 0;
@@ -247,6 +232,8 @@ export class WoolManager extends Component {
             }
         }
     }
+
+   
 
     public stopMoving(): void {
         if (!this.splineInstantiate) return;

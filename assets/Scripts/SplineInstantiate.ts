@@ -26,7 +26,7 @@ export class SplineInstantiate extends Component {
     @property({ type: Node, tooltip: "Parent node cho các object được instantiate (mặc định là scene root)" })
     public parentNode: Node = null!;
 
-    public items: Node[] = [];
+    @property(Node) public items: Node[] = [];
 
     protected start(): void {
         // Nếu không set parentNode, dùng scene root
