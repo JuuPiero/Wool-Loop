@@ -112,6 +112,7 @@ export class Spool extends Clickable implements IGridItem {
 
     private tempVec3: Vec3 = new Vec3()
     private wiggleTween: Tween<Node> | null = null;
+    private ropePositionTween: Tween<{ value: number }> | null = null;
     private baseRotation: Vec3 = new Vec3();
 
     startWiggle() {
@@ -195,7 +196,7 @@ export class Spool extends Clickable implements IGridItem {
 
     // private bouceTween: Tween<Node> | null = null;
     private isBocuncePlaying: boolean = false;
-    public playClickBounce(onDone?: Function) {
+    public playClickBounce(onDone?: Function, onStart?: Function) {
         if (this.isBocuncePlaying) return;
         const baseScale = this.node.scale.clone();
         // if (baseScale.x === 0 && baseScale.y === 0 && baseScale.z === 0) {
@@ -204,6 +205,7 @@ export class Spool extends Clickable implements IGridItem {
         // }
         const basePosition = this.node.position.clone();
         this.isBocuncePlaying = true;
+        onStart?.();
         // Squash & stretch: lún xuống ở trục giữa, nở nhẹ 2 bên.
         const squashScale = new Vec3(baseScale.x * 1.13, baseScale.y * 0.82, baseScale.z * 1.13);
         const squashPosition = new Vec3(basePosition.x, basePosition.y - 0.11, basePosition.z);
@@ -438,6 +440,7 @@ export class Spool extends Clickable implements IGridItem {
             // Nếu speed = 5, delay ~ 0.12s. Nếu speed = 12, delay ~ 0.05s
             const dynamicDelay = Math.max(0.04, 0.6 / woolManager.speed);
             const animDuration = dynamicDelay * 1.5; // Animation dài hơn delay một chút để gối đầu nhau
+            const ropeAnimDuration = Math.max(animDuration * 1.5, 0.12); // Slow down rope movement independently
 
             this.count++;
             this.syncWoolsView();
@@ -466,12 +469,12 @@ export class Spool extends Clickable implements IGridItem {
             const ropeEndTarget = this.getRopeEndTargetByCount(this.count);
             const ropeEndLerp = new Vec3();
 
+            this.ropePositionTween?.stop();
             let t = { value: 0 };
-            tween(t)
-                .to(animDuration, { value: 1 }, {
+            this.ropePositionTween = tween(t)
+                .to(ropeAnimDuration, { value: 1 }, {
                     easing: "quadOut",
                     onUpdate: () => {
-                        if (!item.wool) return;
                         Vec3.lerp(this.tempVec3, start, woolTargetPos, t.value);
                         this.rope.startPoint.setWorldPosition(this.tempVec3);
 
@@ -621,9 +624,9 @@ export class Spool extends Clickable implements IGridItem {
             // mat.setProperty("_Color", this.color);
             mat.setProperty("color", this.color);
             if (active) {
-                mat.setProperty('lineWidth', 50);
+                mat.setProperty('lineWidth', 40);
             } else {
-                mat.setProperty('lineWidth', 20);
+                mat.setProperty('lineWidth', 40);
                 // mat.setProperty('lineWidth', 0);
             }
         });

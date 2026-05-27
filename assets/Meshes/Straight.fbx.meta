@@ -5,24 +5,6 @@
   "uuid": "ee2aca7f-f341-443b-b772-9f756c069666",
   "files": [],
   "subMetas": {
-    "a62fe": {
-      "importer": "gltf-mesh",
-      "uuid": "ee2aca7f-f341-443b-b772-9f756c069666@a62fe",
-      "displayName": "",
-      "id": "a62fe",
-      "name": "Scene.mesh",
-      "userData": {
-        "gltfIndex": 0,
-        "triangleCount": 12
-      },
-      "ver": "1.1.1",
-      "imported": true,
-      "files": [
-        ".bin",
-        ".json"
-      ],
-      "subMetas": {}
-    },
     "fd73d": {
       "importer": "gltf-embeded-image",
       "uuid": "ee2aca7f-f341-443b-b772-9f756c069666@fd73d",
@@ -43,6 +25,24 @@
       ],
       "subMetas": {}
     },
+    "a62fe": {
+      "importer": "gltf-mesh",
+      "uuid": "ee2aca7f-f341-443b-b772-9f756c069666@a62fe",
+      "displayName": "",
+      "id": "a62fe",
+      "name": "Scene.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 12
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
     "4f17a": {
       "importer": "texture",
       "uuid": "ee2aca7f-f341-443b-b772-9f756c069666@4f17a",
@@ -56,8 +56,8 @@
         "magfilter": "linear",
         "mipfilter": "none",
         "anisotropy": 0,
-        "isUuid": true,
-        "imageUuidOrDatabaseUri": "ee2aca7f-f341-443b-b772-9f756c069666@fd73d"
+        "isUuid": false,
+        "imageUuidOrDatabaseUri": "db://assets/Textures/Main.png"
       },
       "ver": "1.0.22",
       "imported": true,
@@ -103,7 +103,7 @@
     "imageMetas": [
       {
         "name": "DiffuseColor_Texture",
-        "uri": "ee2aca7f-f341-443b-b772-9f756c069666@fd73d"
+        "uri": "db://assets/Textures/Main.png"
       }
     ],
     "fbx": {

@@ -271,7 +271,7 @@ export class SpoolManager extends Component {
     }
 
     public onSpoolSelected(spool: Spool) {
-        spool.playClickBounce(() => {
+        spool.playClickBounce(undefined, () => {
             if (Spool.delay) return
             if (spool.isFlying || spool.isInSlot) return;
             if (spool.isSpawning) return;
@@ -306,8 +306,6 @@ export class SpoolManager extends Component {
                 this.checkLose();
             });
         })
-
-
     }
 
     public checkLose() {
