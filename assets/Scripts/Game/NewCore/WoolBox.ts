@@ -1,4 +1,4 @@
-import { _decorator, Component, MeshRenderer, Node, tween, Vec3, Widget } from 'cc';
+import { _decorator, Component, MeshRenderer, Node, randomRange, tween, Vec3, Widget } from 'cc';
 import { PlayableColorConfig } from '../../Data/ColorConfig';
 import { VehicleData } from '../LevelDataSA';
 import { ServiceLocator } from '../../ServiceLocator';
@@ -63,6 +63,50 @@ export class WoolBox extends Clickable {
         }
         console.log("Hello world");
         
+    }
+
+
+     cachedRotation : Vec3 = new Vec3()
+    targetRot1 : Vec3 = new Vec3()
+    targetRot2 : Vec3 = new Vec3()
+    ApplyForceCollide(hitDirection : Vec3){
+        for (let i = 0; i < 3; i++) {
+            var hitColleration = Vec3.dot(hitDirection.normalize(),this.node.forward)
+            var xForce = 0;
+            var zForce = 0;
+            if(hitColleration >= 0.3)
+            {
+                xForce = 1;
+            }
+            else if(hitColleration <= -0.3)
+            {
+                xForce = -1;
+            }
+            else
+            {
+                hitColleration = Vec3.dot(hitDirection,this.node.right)
+                if(hitColleration > 0)
+                {
+                    zForce = 1;
+                }
+                else
+                {
+                    zForce = -1;
+                }
+            }
+            var randomX = randomRange(3,5) * xForce
+            var randomZ = randomRange(3,5) * zForce
+
+            this.node.rotation.getEulerAngles(this.cachedRotation);
+            this.node.setRotationFromEuler(this.cachedRotation)
+            this.targetRot1.set(randomX,this.cachedRotation.y, randomZ)
+            this.targetRot2.set(-randomX,this.cachedRotation.y, -randomZ)
+            tween(this.node)
+            .to(0.1, {eulerAngles: this.targetRot1})
+            .to(0.1, {eulerAngles: this.targetRot2})
+            .to(0.1, {eulerAngles: this.cachedRotation})
+            .start();
+        }
     }
 
 }
