@@ -1,7 +1,6 @@
 import { _decorator, CCString, Color, Prefab } from 'cc';
 const { ccclass, property } = _decorator;
 import { bh } from 'db://scriptable-asset/scriptable_runtime';
-import { NewLevelData } from './NewLevelDataSA';
 import { LevelDataSA } from './LevelDataSA';
 
 

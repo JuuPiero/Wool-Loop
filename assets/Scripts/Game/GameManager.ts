@@ -1,11 +1,9 @@
-import { _decorator, CCBoolean, Color, Component, EventKeyboard, Input, input, instantiate, JsonAsset, KeyCode, Node, sys } from 'cc';
+import { _decorator, CCBoolean, Color, Component, EventKeyboard, Input, input, instantiate, JsonAsset, KeyCode, log, Node, sys } from 'cc';
 import { GameConfig } from './GameConfigSA';
 import { ServiceLocator } from '../ServiceLocator';
 import { EventBus } from '../EventBus';
 import { GameEvent } from '../GameEvent';
 import super_html_playable from '../super_html_playable';
-import { LevelsConfig } from './LevelsConfig';
-import { NewLevelData } from './NewLevelDataSA';
 import { NavigationContainer } from '../Navigation/NavigationContainer';
 import { SpoolManager } from './SpoolManager';
 import { WoolManager } from './WoolManager';
@@ -16,6 +14,7 @@ import { ETrackingEvent, TrackingManager } from '../TrackingManager';
 import { LevelData, LevelDataSA } from './LevelDataSA';
 import { PlayableColorConfig } from '../Data/ColorConfig';
 import { SOUNDS } from './Sounds';
+import { WoolBoxManager } from './NewCore/WoolBoxManager';
 const { ccclass, property } = _decorator;
 
 export enum GameState {
@@ -48,13 +47,17 @@ export class GameManager extends Component {
     @property(SpoolManager) public spoolManager: SpoolManager = null
     @property(WoolManager) public woolManager: WoolManager = null
     @property(SlotManager) public slotManager: SlotManager = null
+    @property(WoolBoxManager) public woolBoxManager: WoolBoxManager = null
+
+
+    @property(Node) leavingEndPoint: Node = null
 
     
     _button: boolean = false
     @property({ type: CCBoolean })
     public set button(v : boolean) {
-        this._button = v;
-        console.log("clicked");
+        // this._button = v;
+        console.log("Hello world");
     }
     public get button(): boolean {
         return this._button;
@@ -115,6 +118,9 @@ export class GameManager extends Component {
         this.colorConfig = Object.assign(new PlayableColorConfig, colorRaw);
         this.levelData = this.currentLevelData.getLevel();
 
+        // console.log(this.levelData.vehicles.length);
+        
+
         ServiceLocator.register(PlayableColorConfig, this.colorConfig)
 
 
@@ -126,8 +132,10 @@ export class GameManager extends Component {
         }
 
         this.woolManager.init(this.levelData, this.colorConfig)
-        this.spoolManager.init(this.levelData, this.colorConfig)
+        // this.spoolManager.init(this.levelData, this.colorConfig)
         this.slotManager.init(this.levelData)
+        this.woolBoxManager.init(this.levelData, this.colorConfig)
+
         SoundManager.instance.playMusic("BGM", true)
         TrackingManager.TrackEvent(ETrackingEvent.LOADED)
         TrackingManager.TrackEvent(ETrackingEvent.DISPLAYED)

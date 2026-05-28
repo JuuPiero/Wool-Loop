@@ -37,70 +37,18 @@
     "__uuid__": "b14c47c1-d97b-440d-9ebe-e7e334bdcfea",
     "__expectedType__": "cc.JsonAsset"
   },
-  "colors": [
+  "woolBoxPrefabs": [
     {
-      "__type__": "cc.Color",
-      "r": 114,
-      "g": 18,
-      "b": 204,
-      "a": 255
+      "__uuid__": "f45cc44f-c8f1-4d6b-9588-e48144c94f5f",
+      "__expectedType__": "cc.Prefab"
     },
     {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 0,
-      "b": 213,
-      "a": 255
+      "__uuid__": "9c8a895c-a0e0-4ba7-a561-83fd3289e569",
+      "__expectedType__": "cc.Prefab"
     },
     {
-      "__type__": "cc.Color",
-      "r": 0,
-      "g": 63,
-      "b": 195,
-      "a": 255
-    },
-    {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 8,
-      "b": 8,
-      "a": 255
-    },
-    {
-      "__type__": "cc.Color",
-      "r": 0,
-      "g": 190,
-      "b": 0,
-      "a": 255
-    },
-    {
-      "__type__": "cc.Color",
-      "r": 0,
-      "g": 223,
-      "b": 231,
-      "a": 255
-    },
-    {
-      "__type__": "cc.Color",
-      "r": 255,
-      "g": 184,
-      "b": 0,
-      "a": 255
-    },
-    {
-      "__type__": "cc.Color",
-      "r": 0,
-      "g": 73,
-      "b": 50,
-      "a": 255
-    },
-    {
-      "__type__": "cc.Color",
-      "r": 235,
-      "g": 104,
-      "b": 2,
-      "a": 255
+      "__uuid__": "8fe17c27-0583-46d9-9e30-8a6063dfad32",
+      "__expectedType__": "cc.Prefab"
     }
-  ],
-  "collectTime": 0.1
+  ]
 }

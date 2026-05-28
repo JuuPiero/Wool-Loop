@@ -38,12 +38,7 @@ export class GameConfig extends bh.ScriptableAsset {
 
     @property(JsonAsset) public colorConfigJson: JsonAsset = null;
     
-    
-
-    @property({type: Color})
-    public colors: Color[] = []
-
-    @property public collectTime = 0.1;
+    @property(Prefab) public woolBoxPrefabs: Prefab[] = []
    
     onLoaded(): void {
         

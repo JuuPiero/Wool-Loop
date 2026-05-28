@@ -27,6 +27,20 @@ export class ConveyorData {
     public colorIds: number[] = []
 }
 
+@ccclass('VehicleData')
+export class VehicleData {
+    @property public vehicleUid: number = -1
+    @property public vehicleType: number = 0;
+    @property public colorTypeValue: number = 0;
+    @property public isHideCar: boolean =  false;
+    @property public localPosValueX: number = 0;
+    @property public localPosValueY: number = 0.0;
+    @property public localPosValueZ: number = 0;
+    @property public localRotValueX: number =  0.0;
+    @property public localRotValueY: number =  0.0;
+    @property public localRotValueZ: number = 0
+}
+
 
 @ccclass('LevelData') // Level runtime
 export class LevelData {
@@ -43,7 +57,9 @@ export class LevelData {
 
     @property(ConveyorData) public conveyors: ConveyorData[] = []
 
+    @property(VehicleData) public vehicles: VehicleData[] = []
 }
+
 
 
 

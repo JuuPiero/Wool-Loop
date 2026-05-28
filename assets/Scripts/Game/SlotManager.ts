@@ -2,7 +2,6 @@ import { _decorator, CCFloat, CCInteger, Component, instantiate, Node, Prefab, V
 import { ServiceLocator } from '../ServiceLocator';
 import { Slot } from './Slot';
 import { GameConfig } from './GameConfigSA';
-import { NewLevelData } from './NewLevelDataSA';
 import { LevelData } from './LevelDataSA';
 const { ccclass, property } = _decorator;
 
