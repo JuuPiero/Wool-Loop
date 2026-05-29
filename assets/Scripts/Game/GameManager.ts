@@ -91,15 +91,6 @@ export class GameManager extends Component {
         }
     }
 
-
-    // public loadLevel() {
-        
-
-    //     const rawData = this.levelJson.json; 
-    //     const levelData = Object.assign(new NewLevelData(), rawData);
-    //     this.newLevelData = levelData
-    // }
-
     protected onLoad(): void {
         if (this.gameConfig) {
             ServiceLocator.register(GameConfig, this.gameConfig)

@@ -8,7 +8,7 @@ const { ccclass, property } = _decorator;
 
 @ccclass('WoolBoxManager')
 export class WoolBoxManager extends Component {
-    
+    @property public spacing: number = 2
     
     init(levelData: LevelData, colorConfig: PlayableColorConfig) {
         const vehicles = levelData.vehicles
@@ -29,48 +29,7 @@ export class WoolBoxManager extends Component {
         
     }
 
- 
-    hitPointTween(
-        car: Node,
-        targetPoint: Node,
-        tweenCar: Tween<Node>,
-        hitPoint: Vec3 = null
-    ) {
-        const rotateSpeed = 0.05
-        const carSpeed = 35
-
-        const pointForward: Vec3 = hitPoint
-            .clone()
-            .subtract(targetPoint.getWorldPosition())
-            .normalize();
-
-        var Distance = Vec3.distance(car.getWorldPosition(), hitPoint);
-        var timeMove = Distance / carSpeed;
-
-        tweenCar
-            .to(timeMove, {
-                worldPosition: hitPoint,
-            })
-            .call(() => {
-                const carforward = car.forward.clone();
-                tween(carforward)
-                    .to(
-                        rotateSpeed,
-                        {
-                            x: pointForward.x,
-                            y: pointForward.y,
-                            z: pointForward.z,
-                        },
-                        {
-                            onUpdate: () => {
-                                car.forward = carforward;
-                            },
-                        }
-                    )
-                    .start();
-            })
-            .delay(rotateSpeed);
-    }
+    
 }
 
 

@@ -28,26 +28,26 @@ export class ColorHexCode {
 // }
 
 // Class cho vehicle data
-@ccclass('VehicleData')
-export class VehicleData {
-    @property
-    public entityColorType: number = 0;
+// @ccclass('VehicleData')
+// export class VehicleData {
+//     @property
+//     public entityColorType: number = 0;
 
-    @property
-    public isHidden: boolean = false;
+//     @property
+//     public isHidden: boolean = false;
 
-    @property
-    public hasIce: boolean = false;
+//     @property
+//     public hasIce: boolean = false;
 
-    @property
-    public iceCount: number = 0;
+//     @property
+//     public iceCount: number = 0;
 
-    @property
-    public coordinateX: number = 0;
+//     @property
+//     public coordinateX: number = 0;
 
-    @property
-    public coordinateY: number = 0;
-}
+//     @property
+//     public coordinateY: number = 0;
+// }
 
 // Class cho passenger queue data
 @ccclass('PassengerQueueData')
@@ -104,10 +104,10 @@ export class NewLevelData {
     })
     public gridSlotsData: GridSlotData[] = [];
 
-    @property({
-        type: [VehicleData]
-    })
-    public vehiclesData: VehicleData[] = [];
+    // @property({
+    //     type: [VehicleData]
+    // })
+    // public vehiclesData: VehicleData[] = [];
 
     @property({
         type: [CCString]
