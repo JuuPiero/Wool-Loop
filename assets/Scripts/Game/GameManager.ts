@@ -50,8 +50,6 @@ export class GameManager extends Component {
     @property(WoolBoxManager) public woolBoxManager: WoolBoxManager = null
 
 
-    @property(Node) leavingEndPoint: Node = null
-
     
     _button: boolean = false
     @property({ type: CCBoolean })
