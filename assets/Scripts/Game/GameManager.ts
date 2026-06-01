@@ -142,7 +142,9 @@ export class GameManager extends Component {
     }
 
     setupLinkStore() {
-        super_html_playable.set_google_play_url(this.gameConfig.storeUrl)
+        super_html_playable.set_google_play_url(this.gameConfig.googleStoreUrl)
+        super_html_playable.set_google_play_url(this.gameConfig.appleStoreUrl)
+
 
     }
 

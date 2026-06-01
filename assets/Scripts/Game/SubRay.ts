@@ -45,6 +45,7 @@ export class SubRay extends Component {
 
     protected start(): void {
         this.gameManager = ServiceLocator.get(GameManager)
+        this.barrier = this.getComponentInChildren(Barrier)
 
     }
 

@@ -4779,6 +4779,7 @@
     "parentNode": {
       "__id__": 51
     },
+    "items": [],
     "_id": "c0S9eS/3NAB5GQ7Z8YDKAA"
   },
   {
@@ -4802,6 +4803,7 @@
     },
     "raySlots": [],
     "barrier": null,
+    "maxShow": 5,
     "_id": "1dWWv+IIFJrbY2E7vSnmsw"
   },
   {
@@ -5718,6 +5720,7 @@
     "parentNode": {
       "__id__": 51
     },
+    "items": [],
     "_id": "6eovHvtnNFroahaMZSpIxe"
   },
   {
@@ -5741,6 +5744,7 @@
     },
     "raySlots": [],
     "barrier": null,
+    "maxShow": 5,
     "_id": "81mPENa8RN0JNcsAg+ahY5"
   },
   {
@@ -6009,6 +6013,7 @@
     "parentNode": {
       "__id__": 51
     },
+    "items": [],
     "_id": "aeHa/VLt5DGoe45FnRyYNn"
   },
   {
