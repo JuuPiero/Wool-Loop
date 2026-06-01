@@ -15,6 +15,7 @@ import { LevelData, LevelDataSA } from './LevelDataSA';
 import { PlayableColorConfig } from '../Data/ColorConfig';
 import { SOUNDS } from './Sounds';
 import { WoolBoxManager } from './NewCore/WoolBoxManager';
+import { HitVfxPool } from './NewCore/HitVfxPool';
 const { ccclass, property } = _decorator;
 
 export enum GameState {
@@ -55,11 +56,24 @@ export class GameManager extends Component {
     @property({ type: CCBoolean })
     public set button(v : boolean) {
         // this._button = v;
-        console.log("Hello world");
+        console.log("hello 123");
     }
     public get button(): boolean {
         return this._button;
     }
+
+    
+    private _reset : boolean;
+    @property({ type: CCBoolean })
+    public get reset() : boolean {
+        return this._reset;
+    }
+    public set reset(v : boolean) {
+        // this._reset = v;
+        EventBus.emit(GameEvent.NEW_GAME)
+
+    }
+    
 
     
     protected onEnable(): void {
@@ -120,10 +134,11 @@ export class GameManager extends Component {
             this.woolManager = splinesNode.getComponent(WoolManager)
         }
 
-        this.woolManager.init(this.levelData, this.colorConfig)
+        this.woolManager?.init(this.levelData, this.colorConfig)
         // this.spoolManager.init(this.levelData, this.colorConfig)
-        this.slotManager.init(this.levelData)
-        this.woolBoxManager.init(this.levelData, this.colorConfig)
+        this.slotManager?.init(this.levelData)
+        this.woolBoxManager?.init(this.levelData, this.colorConfig)
+        HitVfxPool.initialize(this.gameConfig.hitEffect, this.node)
 
         SoundManager.instance.playMusic("BGM", true)
         TrackingManager.TrackEvent(ETrackingEvent.LOADED)
@@ -139,7 +154,8 @@ export class GameManager extends Component {
     }
 
     setupLinkStore() {
-        super_html_playable.set_google_play_url(this.gameConfig.storeUrl)
+        super_html_playable.set_google_play_url(this.gameConfig.googleStoreUrl)
+        super_html_playable.set_app_store_url(this.gameConfig.appleStoreUrl)
 
     }
 

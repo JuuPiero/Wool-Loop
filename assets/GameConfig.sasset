@@ -32,7 +32,12 @@
     "__uuid__": "ca05d4f3-4d32-4842-b69f-af19b8361c59",
     "__expectedType__": "cc.Prefab"
   },
-  "storeUrl": "https://play.google.com/store/apps/details?id=ig.com.wool.loop.qdc",
+  "hitEffect": {
+    "__uuid__": "6fcf8017-172f-450c-ae61-95429366c1a3",
+    "__expectedType__": "cc.Prefab"
+  },
+  "googleStoreUrl": "https://play.google.com/store/apps/details?id=ig.com.wool.loop.qdc",
+  "appleStoreUrl": "https://apps.apple.com/us/app/wool-loop-color-puzzle/id6762744304",
   "colorConfigJson": {
     "__uuid__": "b14c47c1-d97b-440d-9ebe-e7e334bdcfea",
     "__expectedType__": "cc.JsonAsset"

@@ -33,8 +33,11 @@ export class GameConfig extends bh.ScriptableAsset {
     @property(Prefab)
     public confettiEffect: Prefab
 
-    @property(CCString)
-    public storeUrl: string
+    @property(Prefab) public hitEffect: Prefab
+
+    @property(CCString) public googleStoreUrl: string
+    @property(CCString) public appleStoreUrl: string = ""
+
 
     @property(JsonAsset) public colorConfigJson: JsonAsset = null;
     

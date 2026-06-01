@@ -72,7 +72,7 @@ export class WoolManager extends Component {
         }
     }
 
-    @property(RealCurve) public diffCurve: RealCurve = new RealCurve()
+    // @property(RealCurve) public diffCurve: RealCurve = new RealCurve()
 
     public init(newLevelData: LevelData, colorConfig: PlayableColorConfig) {
 

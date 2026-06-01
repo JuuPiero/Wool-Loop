@@ -929,8 +929,12 @@
     "_enabled": true,
     "__prefab": null,
     "spacing": 4,
+    "forceOpenStore": false,
+    "tapCount": 0,
+    "maxTapToOpenStore": 5,
     "spoolContainer": null,
     "spools": [],
+    "pipelines": [],
     "_id": "2fliUO4vBMX6yofdpt+gWM"
   },
   {
@@ -3964,6 +3968,7 @@
     "useUniformSpacing": true,
     "sampleCount": 100,
     "parentNode": null,
+    "items": [],
     "_id": "66hX1FTs5HxozQoMzvB8XK"
   },
   {
@@ -3986,6 +3991,8 @@
       "__id__": 120
     },
     "raySlots": [],
+    "barrier": null,
+    "maxShow": 5,
     "_id": "faWPuCCuZEVLfWlLCvgwLc"
   },
   {
@@ -4879,6 +4886,7 @@
     "useUniformSpacing": true,
     "sampleCount": 100,
     "parentNode": null,
+    "items": [],
     "_id": "28Bwoqh6dKIaR5OVKYeavI"
   },
   {
@@ -4901,6 +4909,8 @@
       "__id__": 147
     },
     "raySlots": [],
+    "barrier": null,
+    "maxShow": 5,
     "_id": "4comn1bIxJfKpFAFo8EyqX"
   },
   {
@@ -5086,6 +5096,7 @@
     "parentNode": {
       "__id__": 59
     },
+    "items": [],
     "_id": "aeHa/VLt5DGoe45FnRyYNn"
   },
   {
@@ -5113,20 +5124,6 @@
       }
     ],
     "slots": [],
-    "difficultyCurveSamples": [
-      0.1,
-      0.25,
-      0.5,
-      0.75,
-      0.9
-    ],
-    "easyRunLength": 6,
-    "hardRunLength": 1,
-    "runLengthJitter": 1,
-    "easyAvoidRepeatChance": 0.1,
-    "hardAvoidRepeatChance": 0.9,
-    "useLevelDifficultyType": true,
-    "levelDifficultyScale": 0.15,
     "_id": "669S6TogRJPJUJUv+rLzB2"
   },
   {
@@ -5279,6 +5276,9 @@
       }
     ],
     "poolSize": 10,
+    "masterVolume": 1,
+    "musicVolume": 1,
+    "sfxVolume": 1,
     "_id": "7c2zmTsI1DtJQDj1g78/AU"
   },
   {
@@ -7766,13 +7766,9 @@
       "__uuid__": "2d733430-eb50-4442-9c42-f7c0868abe1d",
       "__expectedType__": "032387TqvFO/aiJxh6GMenp"
     },
-    "levelsConfig": {
-      "__uuid__": "5a8fe7f2-7886-4485-a516-258acdb2371f",
-      "__expectedType__": "21fefwRVnRB2IXfJqn2KeDV"
-    },
-    "levelJson": {
-      "__uuid__": "19348603-e35d-4221-ba42-143a37358021",
-      "__expectedType__": "cc.JsonAsset"
+    "currentLevelData": {
+      "__uuid__": "96bf7b7d-5f16-4583-986e-b97c99030cb2",
+      "__expectedType__": "6c57a9YCFRC7YThajS08tDA"
     },
     "spoolManager": {
       "__id__": 56
@@ -7783,6 +7779,7 @@
     "slotManager": {
       "__id__": 58
     },
+    "woolBoxManager": null,
     "_id": "eeXjtDWAlGg5XNvCSCIuit"
   },
   {

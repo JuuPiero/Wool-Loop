@@ -93,6 +93,9 @@ export class Spool extends Clickable implements IGridItem {
         this.count = 0;
         this.node.name = `Spool_(${data.x}, ${data.y})`;
         this.clickFunc = onClick;
+        if (!this.rope) {
+            this.rope = this.getComponentInChildren(RopeBezierWave3D)!;
+        }
         this.setColor(data.colorId);
 
     }
@@ -100,9 +103,26 @@ export class Spool extends Clickable implements IGridItem {
     public setColor(colorId: number) {
         const colorConfig = ServiceLocator.get(PlayableColorConfig);
         this.color = colorConfig.getMainColor(colorId) || Color.WHITE;
-        this.rope?.setColor(this.color);
-        const mat = this.rope.getComponent(MeshRenderer).getMaterialInstance(0)
-        mat.setProperty('fill', 0)
+
+        if (!this.rope) {
+            this.rope = this.getComponentInChildren(RopeBezierWave3D) || null;
+        }
+
+        if (this.rope) {
+            this.rope.setColor(this.color);
+            const mat = this.rope.getComponent(MeshRenderer).getMaterialInstance(0);
+            if (mat) {
+                mat.setProperty('fill', 0);
+            }
+        }
+
+        for (const renderer of this.renderers) {
+            if (!renderer) continue;
+            const mat = renderer.getMaterialInstance(0);
+            if (mat) {
+                mat.setProperty('color', this.color);
+            }
+        }
     }
 
     public isFull() {
@@ -340,6 +360,48 @@ export class Spool extends Clickable implements IGridItem {
                 // Emit event khi spool move to slot (thay vì gọi onExit callback)
             })
             .start();
+    }
+
+    public placeInSlot(slot: Slot, onDone?: Function) {
+        this.isFlying = false;
+        this.isInSlot = true;
+        slot.setProcess(0);
+        slot.labelProcess.node.active = true;
+
+        Tween.stopAllByTarget(this.node);
+        this.node.setWorldPosition(slot.placePos.worldPosition);
+        this.node.eulerAngles = new Vec3(-90, 90, 90);
+
+        this.syncWoolsView();
+        this.slot = slot;
+        slot.setSpool(this);
+
+        const itemsInMatchZone = ServiceLocator.get(MatchZone).itemsInMatchZone;
+        const itemsToAdd: RaySlot[] = [];
+        for (const raySlot of itemsInMatchZone) {
+            if (raySlot.wool && raySlot.wool.color.equals(this.color) && !this.isFull()) {
+                itemsToAdd.push(raySlot);
+            }
+        }
+        for (const raySlot of itemsToAdd) {
+            this.queue.push(raySlot);
+            itemsInMatchZone.delete(raySlot);
+        }
+
+        this.collects();
+        Spool.delay = false;
+        onDone?.();
+
+        const exitDone = (replacementSpool?: Spool) => {
+            if (!replacementSpool && this.isOpen) {
+                this.activateNextSpools();
+            }
+        };
+        if (this.onExitFunc) {
+            this.onExitFunc(exitDone);
+        } else {
+            exitDone();
+        }
     }
 
     @property(RaySlot)

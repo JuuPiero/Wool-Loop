@@ -1,4 +1,4 @@
-import { _decorator, BoxCollider, Component, geometry, GradientRange, Line, MeshRenderer, Node, PhysicsSystem, randomRange, tween, Tween, Vec3, Widget } from 'cc';
+import { _decorator, BoxCollider, Color, Component, geometry, GradientRange, instantiate, Line, MeshRenderer, Node, PhysicsSystem, randomRange, tween, Tween, Vec3, Widget } from 'cc';
 import { PlayableColorConfig } from '../../Data/ColorConfig';
 import { VehicleData } from '../LevelDataSA';
 import { ServiceLocator } from '../../ServiceLocator';
@@ -7,6 +7,14 @@ import { Clickable } from '../../Clickable';
 import { SlotManager } from '../SlotManager';
 import { EDITOR, PREVIEW } from 'cc/env';
 import { WoolBoxManager } from './WoolBoxManager';
+import { GameConfig } from '../GameConfigSA';
+import { Spool } from '../Spool';
+import { SpoolManager } from '../SpoolManager';
+import { Slot } from '../Slot';
+import { TutorialController } from '../UI/TutorialController';
+import { ETrackingEvent, TrackingManager } from '../../TrackingManager';
+import { HitVfxPool } from './HitVfxPool';
+import { SoundManager } from '../../SoundManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('WoolBox')
@@ -29,20 +37,54 @@ export class WoolBox extends Clickable {
     protected _woolBoxManager: WoolBoxManager = null
 
 
+    protected gameConfig: GameConfig = null;
+    protected _color: Color = null
+    protected _data: VehicleData = null
+    protected spoolManager: SpoolManager = null
+
+    private _spool: Spool = null
+    private _reservedSlot: Slot = null
+
+    protected onLoad(): void {
+        this.gameConfig = ServiceLocator.get(GameConfig)
+        this.spoolManager = ServiceLocator.get(SpoolManager);
+    }
+
 
     init(data: VehicleData, colorConfig: PlayableColorConfig, woolBoxManager: WoolBoxManager) {
         const mat = this.renderer.getMaterialInstance(0);
-        mat.setProperty("color", colorConfig.getMainColor(data.colorTypeValue));
+        this._color = colorConfig.getMainColor(data.colorTypeValue)
+        this._data = data
+        mat.setProperty("color", this._color);
         if (this.debugRayLine) {
             const temp = new GradientRange()
             temp.color = colorConfig.getMainColor(data.colorTypeValue)
             this.debugRayLine.color = temp
         }
         this._woolBoxManager = woolBoxManager
+
+
+        const node = instantiate(this.gameConfig.spoolPrefab)
+        const spool = node.getComponent(Spool);
+        spool.init({
+            x: 0,
+            y: 0,
+            colorId: this._data.colorTypeValue
+        }, this.spoolManager)
+        this._spool = spool
+        // this.spoolManager.spools.push(this._spool);
+        // spool.setColor(this._data.colorTypeValue)
+
     }
 
     public onClick() {
         if (this.isMoving) return;
+
+        const tut = ServiceLocator.get(TutorialController)
+        if (tut && tut.node.active) {
+            tut.node.active = false
+            TrackingManager.TrackEvent(ETrackingEvent.CHALLENGE_STARTED)
+        }
 
         const slot = ServiceLocator.get(SlotManager).getAvailableSlot()
         if (slot) {
@@ -55,16 +97,71 @@ export class WoolBox extends Clickable {
                 return
             }
             else {
-                console.log("ko blocked");
-                // move thẳng 1 đoạn rồi vòng cung lên target
-                this.moveForwardAndTurnToTarget(slot.node)
-                
+                // console.log("ko blocked");
+                this._reservedSlot = slot;
+                // Reserve slot but don't set spool yet (prevents early collection)
+                slot['_reservedBy'] = this;
+                this.moveForwardAndTurnToTarget(slot.placePos, slot)
+
             }
         }
+        else {
+            this.playClickBounce()
+            SoundManager.instance.playOneShot('Failed')
+        }
     }
+
+
+    spawnSpool(slot: Slot) {
+        if (!slot || slot['_reservedBy'] !== this) {
+            console.warn("Slot not reserved by this box, aborting spawn");
+            this.node.active = false;
+            this._reservedSlot = null;
+            return;
+        }
+        // Now set the spool when actually placing it
+        slot.setSpool(this._spool);
+        this._spool.node.setParent(this.spoolManager.node);
+        const e = HitVfxPool.spawn()
+        e.setWorldPosition(this.node.worldPosition)
+        e.setScale(3,3,3)
+
+
+        const targetPos = slot.placePos.worldPosition.clone();
+        const startPos = targetPos.clone();
+        startPos.y += 0.6;
+
+        this._spool.node.setWorldPosition(startPos);
+        this._spool.node.eulerAngles = new Vec3(-90, 90, 90);
+        this._spool.node.setScale(new Vec3(0.35, 0.35, 0.35));
+        // this._spool.node.setOpacity?.(255);
+
+        tween(this._spool.node)
+            .to(0.25, { worldPosition: targetPos, scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' })
+            .to(0.08, { scale: new Vec3(0.9, 0.9, 0.9) }, { easing: 'quadOut' })
+            .to(0.08, { scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' })
+            .call(() => {
+                this._spool.placeInSlot(slot, () => {
+                    this.node.active = false;
+                });
+                 HitVfxPool.release(e)
+            })
+            .start();
+
+        slot['_reservedBy'] = null;
+        this._reservedSlot = null;
+
+
+    }
+
+
     moveForwardAndReturn(target: Node, hitDistance?: number) {
-        if(this.isMoving) return
+        if (this.isMoving) return
         if (!target || !target.isValid) return;
+        if (this._reservedSlot) {
+            this._reservedSlot['_reservedBy'] = null;
+            this._reservedSlot = null;
+        }
         this.isMoving = true
         const selfStartPos = this.node.position.clone();
         const selfStartScale = this.node.scale.clone();
@@ -104,7 +201,10 @@ export class WoolBox extends Clickable {
 
         Tween.stopAllByTarget(this.node);
         Tween.stopAllByTarget(target);
-
+        const effect = HitVfxPool.spawn()
+        effect.setScale(3, 3, 3)
+        effect.setWorldPosition(hitWorld)
+        SoundManager.instance.playOneShot("Pop")
         tween(this.node)
             .to(0.1, {
                 position: hitPos,
@@ -120,6 +220,7 @@ export class WoolBox extends Clickable {
             }, { easing: 'backOut' })
             .call(() => {
                 this.isMoving = false
+                HitVfxPool.release(effect)
             })
             .start();
 
@@ -136,13 +237,51 @@ export class WoolBox extends Clickable {
 
     }
 
-    moveForwardAndTurnToTarget(target: Node) {
+    private isBocuncePlaying: boolean = false;
+    public playClickBounce(onDone?: Function, onStart?: Function) {
+        if (this.isBocuncePlaying) return;
+        const baseScale = this.node.scale.clone();
+        // if (baseScale.x === 0 && baseScale.y === 0 && baseScale.z === 0) {
+        //     onDone?.();
+        //     return;
+        // }
+        const basePosition = this.node.position.clone();
+        this.isBocuncePlaying = true;
+        onStart?.();
+        // Squash & stretch: lún xuống ở trục giữa, nở nhẹ 2 bên.
+        const squashScale = new Vec3(baseScale.x * 1.13, baseScale.y * 0.82, baseScale.z * 1.13);
+        const squashPosition = new Vec3(basePosition.x, basePosition.y - 0.11, basePosition.z);
+        const reboundScale = new Vec3(baseScale.x * 0.97, baseScale.y * 1.06, baseScale.z * 0.97);
+
+        tween(this.node)
+            .to(0.06, {
+                scale: squashScale,
+                position: squashPosition,
+            }, { easing: 'quadOut' })
+            .to(0.08, {
+                scale: reboundScale,
+                position: basePosition,
+            }, { easing: 'quadInOut' })
+            .to(0.1, {
+                scale: baseScale,
+                position: basePosition,
+            }, { easing: 'backOut' })
+            .call(() => {
+                this.isBocuncePlaying = false;
+                onDone?.()
+            })
+            .start();
+        // this.bouceTween?.start();
+    }
+
+    moveForwardAndTurnToTarget(target: Node, slot: Slot) {
         if (this.isMoving) return;
-        if (!target || !target.isValid || !this._woolBoxManager) return;
+        if (!target || !target.isValid || !this._woolBoxManager || !slot) return;
 
         this.isMoving = true;
         this.getComponent(BoxCollider).destroy()
         Tween.stopAllByTarget(this.node);
+        SoundManager.instance.playOneShot("Click")
 
         const manager = this._woolBoxManager;
         const startLocal = this.node.position.clone();
@@ -185,8 +324,14 @@ export class WoolBox extends Clickable {
             currentPoint = nextPoint.clone();
         }
 
+        const finalEuler = new Vec3(0, 90, 0);
+        chain = chain.to(0.2, { eulerAngles: finalEuler }, { easing: 'quadInOut' });
+
         chain.call(() => {
             this.isMoving = false;
+            this.node.eulerAngles = finalEuler.clone();
+            
+            this.spawnSpool(slot)
         }).start();
 
     }

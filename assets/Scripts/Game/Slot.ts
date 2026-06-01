@@ -15,7 +15,7 @@ export class Slot extends Component {
     @property(Label)
     public labelProcess!: Label
     public isAvailable(): boolean {
-        return this.spool == null
+        return this.spool == null && !this['_reservedBy']
     }
 
     public setSpool(spool: Spool) {

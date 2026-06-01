@@ -37,6 +37,10 @@ export class SplineInstantiate extends Component {
     }
 
     public init() {
+        // this.items. 
+        for (const item of this.items) {
+            item.destroy()
+        }
         this.instantiateAlongSpline();
     }
 

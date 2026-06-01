@@ -313,45 +313,44 @@ export class SpoolManager extends Component {
         const woolManager = ServiceLocator.get(WoolManager);
         const matchZone = ServiceLocator.get(MatchZone);
 
-        // 1. Nếu vẫn còn slot trống thì chưa thể thua
-        const availableSlot = slotManager.getAvailableSlot();
-        if (availableSlot) return;
+        // 1. Nếu vẫn còn slot trống hoặc slot đã được reserve bởi WoolBox thì chưa thể thua
+        const hasPendingSlot = slotManager.slots.some(slot => slot.isAvailable() || !!slot['_reservedBy']);
+        if (hasPendingSlot) return;
 
         const areSubRaysEmpty = woolManager.subRays.every(subRay =>
             subRay.raySlots.every(slot => slot.wool === null)
         );
 
-        // Kiểm tra xem Main Ray đã lấp đầy len tất cả các vị trí chưa
         const isMainRayFull = woolManager.slots.every(slot => slot.wool !== null);
 
-        // LOGIC MỚI: 
         // Nếu Sub Rays vẫn còn len VÀ Main Ray chưa bị lấp đầy hoàn toàn
         // -> Có nghĩa là len từ Sub Ray vẫn có thể đi vào Main Ray -> Bỏ qua check lose.
         if (!areSubRaysEmpty && !isMainRayFull) {
             return;
         }
 
-        // 2. Kiểm tra xem có bất kỳ Spool nào trong Slot đang bận hút len không
-        // Nếu có Spool đang collects(), ta phải đợi nó hút xong mới biết được có thua hay không
+        // 2. Nếu có bất kỳ Spool nào đang thu len thì chờ nó hoàn thành.
         for (const slot of slotManager.slots) {
             if (slot.spool && slot.spool.isCollecting) {
                 return;
             }
         }
 
-        // 3. Kiểm tra xem trên sân (Băng chuyền + MatchZone) còn cục len nào 
-        // có màu trùng với các Spool đang đợi trong Slot hay không
+        // 3. Kiểm tra xem trên sân (Main Ray + MatchZone) còn cục len nào 
+        // có màu trùng với các Spool đang đợi trong Slot hay không.
+        const allWoolsOnField = [
+            ...woolManager.slots.filter(s => s.wool).map(s => s.wool),
+            ...Array.from(matchZone.itemsInMatchZone)
+                .filter(raySlot => raySlot.wool)
+                .map(raySlot => raySlot.wool),
+        ];
+
         let hasMatchableWool = false;
-
-        // Gom tất cả len đang có trên sân
-        const allWoolsOnField = woolManager.slots.filter(s => s.wool);
-
         for (const slot of slotManager.slots) {
             const spool = slot.spool;
             if (!spool) continue;
 
-            // Tìm xem còn cục len nào cùng màu với spool này không
-            const match = allWoolsOnField.find(ws => ws.wool.color.equals(spool.color));
+            const match = allWoolsOnField.find(wool => wool.color.equals(spool.color));
             if (match) {
                 hasMatchableWool = true;
                 break;
@@ -362,9 +361,7 @@ export class SpoolManager extends Component {
         if (!hasMatchableWool) {
             console.log('Lose: No more wools to collect and all slots are full');
             this.gameManager.state = GameState.LOSE;
-            // EventBus.emit(GameEvent.LEVEL_COMPLETED);
             EventBus.emit(GameEvent.LEVEL_FAILED)
-
         }
     }
 

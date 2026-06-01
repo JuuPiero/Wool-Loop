@@ -1,4 +1,4 @@
-import { _decorator, BoxCollider, Camera, Component, EventTouch, find, geometry, instantiate, Line, Node, physics, PhysicsSystem, RigidBody, Tween, tween, Vec3 } from 'cc';
+import { _decorator, BoxCollider, Camera, Component, EventTouch, find, geometry, instantiate, Line, LineComponent, Node, physics, PhysicsSystem, RigidBody, Tween, tween, Vec3 } from 'cc';
 import { ServiceLocator } from '../../ServiceLocator';
 import { GameConfig } from '../GameConfigSA';
 import { LevelData, VehicleData } from '../LevelDataSA';
@@ -27,7 +27,7 @@ export class WoolBoxManager extends Component {
         const vehicles = levelData.vehicles
         const boxPrefabs = ServiceLocator.get(GameConfig).woolBoxPrefabs
 
-        vehicles.forEach((item: VehicleData, index) => {
+        vehicles?.forEach((item: VehicleData, index) => {
             const node = instantiate(boxPrefabs[item.vehicleType])
             node.setParent(this.node)
             node.setPosition(item.localPosValueX, item.localPosValueY, item.localPosValueZ)
@@ -56,7 +56,9 @@ export class WoolBoxManager extends Component {
         ).node.position.clone().z - BOUND_OFFSET;
 
         if (EDITOR || PREVIEW) {
-
+            if(!this.lineDebug) {
+                this.lineDebug = this.node.addComponent(Line)
+            }
             const p1 = new Vec3(this.minPositionX, 0, this.maxPositionZ)
             const p2 = new Vec3(this.maxPositionX, 0, this.maxPositionZ)
             const p3 = new Vec3(this.maxPositionX, 0, this.minPositionZ)
