@@ -14,6 +14,9 @@ export class SplineInstantiate extends Component {
     @property({ tooltip: "Số lượng object sẽ được instantiate dọc theo spline" })
     public count: number = 10;
 
+    @property({ tooltip: "Số item dùng để chia khoảng cách (cửa sổ hiển thị lấp đầy spline). 0 = dùng count" })
+    public spacingCount: number = 0;
+
     @property({ tooltip: "Offset từ điểm bắt đầu (0-1)" })
     public startOffset: number = 0;
 
@@ -71,19 +74,23 @@ export class SplineInstantiate extends Component {
             this.spline.buildLengthTable(samples);
         }
 
+        // Số item dùng để chia khoảng cách: nếu có spacingCount thì cửa sổ hiển thị
+        // (spacingCount item) sẽ lấp đầy toàn bộ spline, phần dư dồn về cuối spline.
+        const divisor = this.spacingCount > 0 ? this.spacingCount : this.count;
+
         // Instantiate các object
         for (let i = 0; i < this.count; i++) {
             let startDistance: number;
 
             if (this.useUniformSpacing) {
                 // Tính toán vị trí dựa trên chiều dài đều nhau
-                let t = (i / this.count + this.startOffset);
-                if (t >= 1) t = t % 1;
+                let t = (i / divisor + this.startOffset);
+                if (t > 1) t = 1; // item vượt cửa sổ hiển thị dồn ở cuối spline
                 startDistance = t * this.spline.totalLength;
             } else {
                 // Tính toán vị trí dựa trên tham số t đều nhau
-                let t = i / this.count + this.startOffset;
-                if (t >= 1) t = t % 1;
+                let t = i / divisor + this.startOffset;
+                if (t > 1) t = 1;
                 const position = this.spline.getPoint(t);
 
                 // Tìm distance tương ứng với position

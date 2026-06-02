@@ -15,6 +15,7 @@ import { TutorialController } from '../UI/TutorialController';
 import { ETrackingEvent, TrackingManager } from '../../TrackingManager';
 import { HitVfxPool } from './HitVfxPool';
 import { SoundManager } from '../../SoundManager';
+import { darkenColor } from 'db://assets/Deps/iKame/scripts/utils/ColorUtils';
 const { ccclass, property } = _decorator;
 
 @ccclass('WoolBox')
@@ -55,7 +56,9 @@ export class WoolBox extends Clickable {
         const mat = this.renderer.getMaterialInstance(0);
         this._color = colorConfig.getMainColor(data.colorTypeValue)
         this._data = data
-        mat.setProperty("color", this._color);
+        mat.setProperty("mainColor", this._color);
+        mat.setProperty("shadowColor", darkenColor(this._color, 0.5));
+
         if (this.debugRayLine) {
             const temp = new GradientRange()
             temp.color = colorConfig.getMainColor(data.colorTypeValue)
@@ -122,29 +125,54 @@ export class WoolBox extends Clickable {
         // Now set the spool when actually placing it
         slot.setSpool(this._spool);
         this._spool.node.setParent(this.spoolManager.node);
-        const e = HitVfxPool.spawn()
-        e.setWorldPosition(this.node.worldPosition)
-        e.setScale(3,3,3)
 
-
+        // The box ended its travel sitting on the slot, so morph it in place:
+        // it squashes, collapses into itself, and the spool springs out of the
+        // burst with a little hop before settling into the slot.
+        const boxWorldPos = this.node.worldPosition.clone();
         const targetPos = slot.placePos.worldPosition.clone();
-        const startPos = targetPos.clone();
-        startPos.y += 0.6;
+        const popPos = boxWorldPos.clone();
+        popPos.y += 0.4; // small upward pop as the spool springs free
 
-        this._spool.node.setWorldPosition(startPos);
+        const boxBaseScale = this.node.scale.clone();
+        const boxSquash = new Vec3(boxBaseScale.x * 1.22, boxBaseScale.y * 0.6, boxBaseScale.z * 1.22);
+
+        // Spool starts hidden inside the box, ready to burst out.
+        this._spool.node.setWorldPosition(boxWorldPos);
         this._spool.node.eulerAngles = new Vec3(-90, 90, 90);
-        this._spool.node.setScale(new Vec3(0.35, 0.35, 0.35));
-        // this._spool.node.setOpacity?.(255);
+        this._spool.node.setScale(new Vec3(0, 0, 0));
+
+        // 1) Box anticipates (squashes down) then collapses into itself.
+        tween(this.node)
+            .to(0.09, { scale: boxSquash }, { easing: 'quadOut' })
+            .to(0.1, { scale: new Vec3(0.001, 0.001, 0.001) }, { easing: 'backIn' })
+            .call(() => { this.node.active = false; })
+            .start();
+
+        // 2) At the burst, puff + pop, then the spool springs out and settles.
+        const overshoot = new Vec3(1.18, 1.18, 1.18);
+        const landSquash = new Vec3(1.16, 0.78, 1.16);
+        const landStretch = new Vec3(0.9, 1.12, 0.9);
 
         tween(this._spool.node)
-            .to(0.25, { worldPosition: targetPos, scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' })
-            .to(0.08, { scale: new Vec3(0.9, 0.9, 0.9) }, { easing: 'quadOut' })
-            .to(0.08, { scale: new Vec3(1, 1, 1) }, { easing: 'quadOut' })
+            .delay(0.09) // wait out the box's anticipation
             .call(() => {
-                this._spool.placeInSlot(slot, () => {
-                    this.node.active = false;
-                });
-                 HitVfxPool.release(e)
+                const e = HitVfxPool.spawn();
+                e.setWorldPosition(boxWorldPos);
+                e.setScale(3, 3, 3);
+                SoundManager.instance.playOneShot('Pop');
+                tween(e).delay(0.4).call(() => HitVfxPool.release(e)).start();
+            })
+            // spring out of the box with overshoot, popping up slightly
+            .to(0.2, { worldPosition: popPos, scale: overshoot }, { easing: 'backOut' })
+            // drop into the slot, squashing on impact
+            .to(0.14, { worldPosition: targetPos, scale: landSquash }, { easing: 'quadIn' })
+            // stretch back up...
+            .to(0.08, { scale: landStretch }, { easing: 'quadOut' })
+            // ...and settle to rest
+            .to(0.1, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
+            .call(() => {
+                this._spool.placeInSlot(slot, () => { });
             })
             .start();
 

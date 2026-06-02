@@ -51,7 +51,11 @@ export class SubRay extends Component {
 
     public init(data: ConveyorData, colorConfig: PlayableColorConfig) {
         const count = data.colorIds.length * SEGMENT_COUNT; // Lặp lại 10 lần cho đủ dài
+        const visibleCount = Math.min(this.maxShow * SEGMENT_COUNT, count);
+
         this.splineInstantiate.count = count;
+        // Cửa sổ hiển thị (visibleCount item) trải đều khắp spline; phần dư dồn ở cuối, ẩn đi.
+        this.splineInstantiate.spacingCount = visibleCount;
         this.splineInstantiate.init();
 
         this.raySlots = [];
@@ -60,8 +64,6 @@ export class SubRay extends Component {
             this.raySlots.push(slot);
             item.getComponent(Collider).destroy();
         });
-
-        const visibleCount = Math.min(this.maxShow * SEGMENT_COUNT, this.raySlots.length);
 
         for (let j = 0; j < data.colorIds.length; j++) {
             const colorId = data.colorIds[j];

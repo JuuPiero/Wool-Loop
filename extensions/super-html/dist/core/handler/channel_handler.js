@@ -226,18 +226,9 @@ class channel_handler {
         const s_pre_load_script = `window.super_pre_load_script = ${JSON.stringify(config_1.default.d_hot.l_pre_load_script)};`;
         // #### 各个版本适配文件
         const s_version_adapter_body = utils_1.default.get_json(config_1.default.constants.inject_version_adapter[config_1.default.version]);
-        var settingPA = this.JsonData();
         const s_common = utils_1.default.get_json(config_1.default.constants.inject_common_script);
-         return s_base + settingPA + s_pre_load_script + s_version_adapter_body + s_common ;
+        return s_base + s_pre_load_script + s_version_adapter_body + s_common;
     }
-
-    JsonData(){
-        var jsonData = `window.jsonData = '';`;
-        var currentPoint = `window.currentPoint = '';`;
-        var stateGame = `window.stateGame = '';`;   
-        return jsonData + currentPoint + stateGame;
-    }
-
     //获得渠道脚本 
     _get_channel_script(s_channel_name, s_file_name) {
         // 有配置脚本

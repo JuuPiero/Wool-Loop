@@ -32,7 +32,7 @@
           "2d": {
             "_value": true
           },
-          "sorting-2d": {
+          "xr": {
             "_value": false
           },
           "rich-text": {
@@ -113,7 +113,7 @@
             "_value": false
           },
           "debug-renderer": {
-            "_value": false
+            "_value": true
           },
           "particle-2d": {
             "_value": true
@@ -171,7 +171,7 @@
             "_value": true
           },
           "procedural-animation": {
-            "_value": false
+            "_value": true
           },
           "custom-pipeline-post-process": {
             "_value": false
@@ -186,7 +186,7 @@
           "legacy-pipeline": {
             "_value": false
           },
-          "xr": {
+          "sorting-2d": {
             "_value": false
           }
         },
@@ -200,6 +200,7 @@
           "audio",
           "base",
           "custom-pipeline",
+          "debug-renderer",
           "gfx-webgl",
           "graphics",
           "light-probe",
@@ -209,6 +210,7 @@
           "particle-2d",
           "physics-ammo",
           "primitive",
+          "procedural-animation",
           "profiler",
           "rich-text",
           "terrain",

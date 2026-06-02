@@ -1,0 +1,303 @@
+// WoolBox.effect — Cocos Creator 3.8.6
+// Chuyển đổi 1:1 từ Unity Shader "WoolLoop/3D/WoolBox" (URP)
+// Logic: normal-map TBN + toon lighting (đèn cố định) + specular từ Effect Map.
+
+CCEffect %{
+  techniques:
+  - name: opaque
+    passes:
+    - vert: woolbox-vs:vert
+      frag: woolbox-fs:frag
+      properties: &props
+        effectTex:   { value: white,  editor: { displayName: Effect Map } }
+        bumpMap:     { value: normal, editor: { displayName: Normal Map } }
+        mainColor:   { value: [1.0, 1.0, 1.0, 1.0], editor: { displayName: Main Color,   type: color } }
+        shadowColor: { value: [0.5, 0.5, 0.5, 0.0], editor: { displayName: Shadow Color, type: color } }
+        sizeTex:     { value: 1.0, target: params.x, editor: { displayName: Texture Scale } }
+      rasterizerState:
+        cullMode: back
+      depthStencilState:
+        depthTest: true
+        depthWrite: true
+    - &shadow-caster
+      vert: shadow-caster-vs:vert
+      frag: shadow-caster-fs:frag
+      phase: shadow-caster
+      propertyIndex: 0
+      rasterizerState:
+        cullMode: back
+      depthStencilState:
+        depthTest: true
+        depthWrite: true
+    - switch: USE_OUTLINE_PASS
+      vert: silhouette-edge-vs
+      frag: silhouette-edge-fs
+      rasterizerState: &r1
+        cullMode: front
+      depthStencilState: &d1
+        depthFunc: less_equal
+        depthTest: true
+        depthWrite: true
+      properties:
+        lineWidth:     { value: 10, target: outlineParams.x }
+        depthBias:     { value: 0,  target: outlineParams.y }
+        baseColor:     { editor: { type: color } }
+        baseColorMap:  { value: grey }
+}%
+
+CCProgram woolbox-vs %{
+  precision highp float;
+  #include <legacy/input-standard>
+  #include <builtin/uniforms/cc-global>
+  #include <legacy/decode-standard>
+  #include <legacy/local-batch>
+
+  // tspace giống Unity: (tangent, bitangent, normal) đóng gói theo trục
+  out vec3 v_tspace0; // tangentWS.x, bitangentWS.x, normalWS.x
+  out vec3 v_tspace1; // tangentWS.y, bitangentWS.y, normalWS.y
+  out vec3 v_tspace2; // tangentWS.z, bitangentWS.z, normalWS.z
+  out vec3 v_viewDir; // hướng nhìn (chưa normalize, giống Unity)
+  out vec2 v_uv;
+
+  vec4 vert () {
+    StandardVertInput In;
+    CCDecode(In);
+    CCVertInput(In);
+
+    mat4 matWorld, matWorldIT;
+    CCGetWorldMatrixFull(matWorld, matWorldIT);
+
+    vec4 positionWS = matWorld * In.position;
+
+    vec3 normalWS    = normalize((matWorldIT * vec4(In.normal, 0.0)).xyz);
+    vec3 tangentWS   = normalize((matWorld   * vec4(In.tangent.xyz, 0.0)).xyz);
+    vec3 bitangentWS = cross(normalWS, tangentWS) * In.tangent.w;
+
+    v_tspace0 = vec3(tangentWS.x, bitangentWS.x, normalWS.x);
+    v_tspace1 = vec3(tangentWS.y, bitangentWS.y, normalWS.y);
+    v_tspace2 = vec3(tangentWS.z, bitangentWS.z, normalWS.z);
+
+    v_viewDir = cc_cameraPos.xyz - positionWS.xyz;
+    v_uv      = a_texCoord;
+
+    return cc_matProj * (cc_matView * positionWS);
+  }
+}%
+
+CCProgram woolbox-fs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <legacy/output-standard>
+
+  in vec3 v_tspace0;
+  in vec3 v_tspace1;
+  in vec3 v_tspace2;
+  in vec3 v_viewDir;
+  in vec2 v_uv;
+
+  uniform sampler2D effectTex;
+  uniform sampler2D bumpMap;
+
+  uniform Constant {
+    vec4 mainColor;
+    vec4 shadowColor;
+    vec4 params; // x: sizeTex
+  };
+
+  // Hướng đèn cố định y hệt Unity (DirectionLight())
+  vec3 DirectionLight () {
+    return vec3(-0.32, 0.77, -0.56);
+  }
+
+  vec3 UnpackNormal (vec4 packednormal) {
+    return packednormal.xyz * 2.0 - 1.0;
+  }
+
+  // Tăng độ bão hòa quanh luma — giống Colors.effect để màu đầu ra tươi tương đương
+  mediump vec3 SetSaturation (mediump vec3 In, mediump float Saturation) {
+    mediump float luma = dot(In, vec3(0.2126729, 0.7151522, 0.0721750));
+    return luma + Saturation * (In - luma);
+  }
+
+  vec4 frag () {
+    vec2 uv = v_uv * params.x;
+
+    vec3 tnormal = UnpackNormal(texture(bumpMap, uv));
+    vec3 effect  = texture(effectTex, uv).xyz;
+
+    // Transform normal từ tangent space sang world space
+    vec3 worldNormal;
+    worldNormal.x = dot(v_tspace0, tnormal);
+    worldNormal.y = dot(v_tspace1, tnormal);
+    worldNormal.z = dot(v_tspace2, tnormal);
+
+    // ---- Toon lighting ----
+    float dotNL = dot(normalize(worldNormal), normalize(DirectionLight()));
+
+    float topBias          = clamp(worldNormal.y, 0.0, 1.0);
+    float combinedLighting = dotNL * (topBias * 0.7);
+
+    float lighting = smoothstep(0.1, 0.5, combinedLighting) + 0.5;
+
+    if (lighting == 0.0) {
+      lighting -= (1.0 - effect.r) * 0.1;
+    } else {
+      lighting *= clamp(effect.r + 0.2, 0.0, 1.0);
+    }
+
+    vec4 finalColor;
+    finalColor.rgb = mix(shadowColor.rgb, mainColor.rgb, lighting);
+    finalColor.a   = mainColor.a;
+
+    // ---- Specular ----
+    vec3  refVec = reflect(-DirectionLight(), worldNormal);
+    float spec   = clamp(dot(normalize(refVec), normalize(v_viewDir)), 0.0, 1.0);
+    spec = pow(spec, 10.0 + 0.001);
+
+    finalColor.rgb += spec * effect.b * mainColor.a * 0.8;
+
+    // ---- Hậu xử lý màu giống Colors.effect ----
+    //   1) Boost bão hòa với cùng hệ số 2.3
+    //   2) Xuất qua CCFragOutput để dùng chung gamma/tonemap như Colors.effect
+    finalColor.rgb = SetSaturation(finalColor.rgb, 1.9);
+    finalColor.rgb = clamp(finalColor.rgb, 0.0, 1.0);
+    return CCFragOutput(finalColor);
+  }
+}%
+
+CCProgram shadow-caster-vs %{
+  precision highp float;
+  #include <legacy/input-standard>
+  #include <builtin/uniforms/cc-global>
+  #include <builtin/uniforms/cc-shadow>
+  #include <legacy/decode-standard>
+  #include <legacy/local-batch>
+
+  out vec2 v_uv;
+
+  vec4 vert () {
+    StandardVertInput In;
+    CCDecode(In);
+    CCVertInput(In);
+
+    mat4 matWorld, matWorldIT;
+    CCGetWorldMatrixFull(matWorld, matWorldIT);
+
+    vec4 positionWS = matWorld * In.position;
+    v_uv = a_texCoord;
+
+    return cc_matLightViewProj * positionWS;
+  }
+}%
+
+CCProgram shadow-caster-fs %{
+  precision highp float;
+
+  in vec2 v_uv;
+
+  vec4 frag () {
+    return vec4(0.0, 0.0, 0.0, 1.0);
+  }
+}%
+
+CCProgram surface-vertex-silhouette-edge %{
+  uniform OutlineVert {
+  vec4 outlineParams; // x: line width, y: depth hack
+};
+
+  #define CC_SURFACES_VERTEX_MODIFY_LOCAL_POS
+  vec3 SurfacesVertexModifyLocalPos(in SurfacesStandardVertexIntermediate In)
+  {
+    float width = outlineParams.x * 0.001;
+    vec3 localPos = In.position.xyz;
+
+  #if USE_POSITION_SCALING
+    vec3 dir = normalize(localPos);
+    float flip = dot(dir, normalize(In.normal)) < 0.0 ? -1.0 : 1.0;
+    localPos += flip * dir * width * 2.0;
+  #else
+    localPos += normalize(In.normal) * width;
+  #endif
+    return localPos;
+  }
+
+  #define CC_SURFACES_VERTEX_MODIFY_CLIP_POS
+  vec4 SurfacesVertexModifyClipPos(in SurfacesStandardVertexIntermediate In)
+  {
+    vec4 clipPos = In.clipPos;
+    float scaleZ = cc_nearFar.z == 0.0 ? 0.5 : 1.0;
+    clipPos.z -= outlineParams.y * 0.002 * scaleZ;
+    return clipPos;
+  }
+}%
+
+CCProgram surface-vertex-silhouette-edge %{
+  uniform OutlineVert {
+  vec4 outlineParams; // x: line width, y: depth hack
+};
+
+  #define CC_SURFACES_VERTEX_MODIFY_LOCAL_POS
+  vec3 SurfacesVertexModifyLocalPos(in SurfacesStandardVertexIntermediate In)
+  {
+    float width = outlineParams.x * 0.001;
+    vec3 localPos = In.position.xyz;
+
+  #if USE_POSITION_SCALING
+    vec3 dir = normalize(localPos);
+    float flip = dot(dir, normalize(In.normal)) < 0.0 ? -1.0 : 1.0;
+    localPos += flip * dir * width * 2.0;
+  #else
+    localPos += normalize(In.normal) * width;
+  #endif
+    return localPos;
+  }
+
+  #define CC_SURFACES_VERTEX_MODIFY_CLIP_POS
+  vec4 SurfacesVertexModifyClipPos(in SurfacesStandardVertexIntermediate In)
+  {
+    vec4 clipPos = In.clipPos;
+    float scaleZ = cc_nearFar.z == 0.0 ? 0.5 : 1.0;
+    clipPos.z -= outlineParams.y * 0.002 * scaleZ;
+    return clipPos;
+  }
+}%
+
+CCProgram surface-fragment-silhouette-edge %{
+  uniform OutlineFrag {
+    vec4 baseColor;
+  };
+  #if USE_BASE_COLOR_MAP
+    uniform sampler2D baseColorMap;
+  #endif
+
+  // only for render-to-shadow-map or misc usage
+  #define CC_SURFACES_FRAGMENT_MODIFY_BASECOLOR_AND_TRANSPARENCY
+  vec4 SurfacesFragmentModifyBaseColorAndTransparency()
+  {
+    vec4 color = vec4(cc_mainLitColor.rgb, 1.0);
+    color.rgb = SRGBToLinear(baseColor.rgb);
+    #if USE_BASE_COLOR_MAP
+      vec4 texColor = texture(baseColorMap, FSInput_texcoord);
+      texColor.rgb = SRGBToLinear(texColor.rgb);
+      color *= texColor;
+    #endif
+
+    return color;
+  }
+}%
+
+CCProgram silhouette-edge-vs %{
+  precision highp float;
+  #include <surfaces/effect-macros/silhouette-edge>
+  #include <surfaces/includes/common-vs>
+  #include <surface-vertex-silhouette-edge>
+  #include <shading-entries/main-functions/misc/silhouette-edge-vs>
+}%
+
+CCProgram silhouette-edge-fs %{
+  precision highp float;
+  #include <surfaces/effect-macros/silhouette-edge>
+  #include <surfaces/includes/common-fs>
+  #include <surface-fragment-silhouette-edge>
+  #include <shading-entries/main-functions/misc/silhouette-edge-fs>
+}%
