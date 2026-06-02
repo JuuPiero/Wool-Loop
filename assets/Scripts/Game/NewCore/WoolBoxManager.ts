@@ -7,7 +7,7 @@ import { WoolBox } from './WoolBox';
 import { EDITOR, PREVIEW } from 'cc/env';
 const { ccclass, property } = _decorator;
 
-const BOUND_OFFSET = 3
+const BOUND_OFFSET = 2
 
 @ccclass('WoolBoxManager')
 export class WoolBoxManager extends Component {

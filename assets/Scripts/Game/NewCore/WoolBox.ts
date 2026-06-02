@@ -32,6 +32,11 @@ export class WoolBox extends Clickable {
     @property public hitTargetPushDistance: number = 0.18
     @property public impactGap: number = 0.05
 
+    // Bán kính bo cua: càng lớn thì khúc cua drift cong tròn hơn
+    @property public cornerRadius: number = 3
+    // Số đoạn nhỏ để dựng mỗi cung cua (càng cao càng mượt)
+    @property public cornerSegments: number = 30
+
 
     isMoving = false
 
@@ -328,13 +333,16 @@ export class WoolBox extends Clickable {
         let currentEuler = this.node.eulerAngles.clone();
         let isFirstSegment = true;
 
-        const fullPath = [boundaryHit, ...perimeterPath, targetLocal];
+        const rawPath = [startLocal, boundaryHit, ...perimeterPath, targetLocal];
+        const roundedPath = this.roundCornerPath(rawPath, this.cornerRadius, Math.max(2, Math.floor(this.cornerSegments)));
+        // Bỏ điểm đầu (startLocal) vì currentPoint đã bắt đầu từ đó
+        const fullPath = roundedPath.slice(1);
         for (const nextPoint of fullPath) {
             const segmentDistance = Vec3.distance(currentPoint, nextPoint);
             if (segmentDistance <= 0.001) continue;
 
             if (isFirstSegment) {
-                chain = chain.to(Math.max(segmentDistance / moveSpeed, 0.04), {
+                chain = chain.to(Math.max(segmentDistance / moveSpeed, 0.001), {
                     position: nextPoint,
                 }, { easing: 'quadInOut' });
                 isFirstSegment = false;
@@ -342,17 +350,20 @@ export class WoolBox extends Clickable {
                 const segmentDirection = nextPoint.clone().subtract(currentPoint).normalize();
                 const nextEuler = this.getEulerForMoveDirection(segmentDirection, currentEuler);
 
-                chain = chain.to(Math.max(segmentDistance / moveSpeed, 0.04), {
+                // Linear cho các đoạn giữa/cung cua để box drift mượt, không khựng ở mỗi điểm
+                chain = chain.to(Math.max(segmentDistance / moveSpeed, 0.001), {
                     position: nextPoint,
                     eulerAngles: nextEuler,
-                }, { easing: 'quadInOut' });
+                }, { easing: 'linear' });
                 currentEuler = nextEuler.clone();
             }
 
             currentPoint = nextPoint.clone();
         }
 
-        const finalEuler = new Vec3(0, 90, 0);
+        // const finalEuler = new Vec3(0, 90, 0);
+        const finalEuler = new Vec3(0, 0, 0);
+
         chain = chain.to(0.2, { eulerAngles: finalEuler }, { easing: 'quadInOut' });
 
         chain.call(() => {
@@ -460,6 +471,61 @@ export class WoolBox extends Clickable {
         if (Math.abs(point.x - bounds.maxX) <= eps) return 1;
         if (Math.abs(point.z - bounds.maxZ) <= eps) return 2;
         return 3;
+    }
+
+    /**
+     * Bo tròn các khúc cua của đường đi: tại mỗi đỉnh trong, cắt bớt 2 cạnh
+     * một đoạn `radius` rồi dựng cung bezier bậc 2 (control = đỉnh cua) để box
+     * drift cong tròn thay vì bẻ góc 90 độ.
+     */
+    private roundCornerPath(points: Vec3[], radius: number, segments: number): Vec3[] {
+        if (radius <= 0.0001 || points.length < 3) {
+            return points.map(p => p.clone());
+        }
+
+        const result: Vec3[] = [points[0].clone()];
+
+        for (let i = 1; i < points.length - 1; i++) {
+            const prev = points[i - 1];
+            const corner = points[i];
+            const next = points[i + 1];
+
+            const inDir = corner.clone().subtract(prev);
+            const outDir = next.clone().subtract(corner);
+            const inLen = inDir.length();
+            const outLen = outDir.length();
+            if (inLen <= 0.0001 || outLen <= 0.0001) {
+                result.push(corner.clone());
+                continue;
+            }
+
+            inDir.multiplyScalar(1 / inLen);
+            outDir.multiplyScalar(1 / outLen);
+
+            // Đường thẳng (không phải khúc cua) -> giữ nguyên đỉnh
+            if (Vec3.dot(inDir, outDir) > 0.999) {
+                result.push(corner.clone());
+                continue;
+            }
+
+            // Không cắt quá nửa cạnh để tránh chồng lấn cung kế bên
+            const cut = Math.min(radius, inLen * 0.5, outLen * 0.5);
+            const p0 = corner.clone().add(inDir.clone().multiplyScalar(-cut));
+            const p2 = corner.clone().add(outDir.clone().multiplyScalar(cut));
+
+            for (let s = 0; s <= segments; s++) {
+                const t = s / segments;
+                const mt = 1 - t;
+                // Bezier bậc 2: (1-t)^2*p0 + 2(1-t)t*corner + t^2*p2
+                const point = p0.clone().multiplyScalar(mt * mt)
+                    .add(corner.clone().multiplyScalar(2 * mt * t))
+                    .add(p2.clone().multiplyScalar(t * t));
+                result.push(point);
+            }
+        }
+
+        result.push(points[points.length - 1].clone());
+        return result;
     }
 
     private getPathLength(start: Vec3, middlePoints: Vec3[], end: Vec3): number {
