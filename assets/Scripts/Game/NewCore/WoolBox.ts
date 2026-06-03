@@ -25,7 +25,7 @@ export class WoolBox extends Clickable {
     @property(Line) public debugRayLine: Line = null
 
 
-    @property speed: number = 20
+    @property speed: number = 30
     @property public raycastDistance: number = 100
     @property public showDebugRay: boolean = true
     @property public hitForwardDistance: number = 0.45
@@ -33,9 +33,9 @@ export class WoolBox extends Clickable {
     @property public impactGap: number = 0.05
 
     // Bán kính bo cua: càng lớn thì khúc cua drift cong tròn hơn
-    @property public cornerRadius: number = 3
+    @property public cornerRadius: number = 10
     // Số đoạn nhỏ để dựng mỗi cung cua (càng cao càng mượt)
-    @property public cornerSegments: number = 30
+    @property public cornerSegments: number = 100
 
 
     isMoving = false

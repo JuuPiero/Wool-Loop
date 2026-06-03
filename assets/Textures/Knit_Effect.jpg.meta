@@ -2,15 +2,15 @@
   "ver": "1.0.27",
   "importer": "image",
   "imported": true,
-  "uuid": "dc5348b3-1a31-4b64-9e8a-0402356595bb",
+  "uuid": "4dd987fb-38a5-4b21-87ba-2f0f280ebf98",
   "files": [
-    ".json",
-    ".png"
+    ".jpg",
+    ".json"
   ],
   "subMetas": {
     "6c48a": {
       "importer": "texture",
-      "uuid": "dc5348b3-1a31-4b64-9e8a-0402356595bb@6c48a",
+      "uuid": "4dd987fb-38a5-4b21-87ba-2f0f280ebf98@6c48a",
       "displayName": "Knit_Effect",
       "id": "6c48a",
       "name": "texture",
@@ -22,7 +22,7 @@
         "mipfilter": "none",
         "anisotropy": 0,
         "isUuid": true,
-        "imageUuidOrDatabaseUri": "dc5348b3-1a31-4b64-9e8a-0402356595bb",
+        "imageUuidOrDatabaseUri": "4dd987fb-38a5-4b21-87ba-2f0f280ebf98",
         "visible": false
       },
       "ver": "1.0.22",
@@ -35,8 +35,8 @@
   },
   "userData": {
     "type": "texture",
-    "fixAlphaTransparencyArtifacts": false,
     "hasAlpha": false,
-    "redirect": "dc5348b3-1a31-4b64-9e8a-0402356595bb@6c48a"
+    "fixAlphaTransparencyArtifacts": false,
+    "redirect": "4dd987fb-38a5-4b21-87ba-2f0f280ebf98@6c48a"
   }
 }

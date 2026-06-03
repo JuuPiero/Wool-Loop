@@ -506,7 +506,7 @@
       "__type__": "cc.Vec3",
       "x": 0,
       "y": 0,
-      "z": -35.921
+      "z": -38.673
     },
     "_lrot": {
       "__type__": "cc.Quat",
@@ -4586,10 +4586,7 @@
       }
     ],
     "_visFlags": 0,
-    "_spriteFrame": {
-      "__uuid__": "7b6c95bb-46e5-4b5c-b2f0-9285d4ce4138@f9941",
-      "__expectedType__": "cc.SpriteFrame"
-    },
+    "_spriteFrame": null,
     "_mode": 0,
     "_color": {
       "__type__": "cc.Color",
@@ -5034,9 +5031,9 @@
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 3.442,
-      "y": 14.431,
-      "z": 7.007
+      "x": 2.951,
+      "y": 13.534,
+      "z": 9.472
     },
     "_lrot": {
       "__type__": "cc.Quat",

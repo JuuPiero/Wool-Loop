@@ -7,7 +7,7 @@ import { WoolBox } from './WoolBox';
 import { EDITOR, PREVIEW } from 'cc/env';
 const { ccclass, property } = _decorator;
 
-const BOUND_OFFSET = 2
+const BOUND_OFFSET = 2.3
 
 @ccclass('WoolBoxManager')
 export class WoolBoxManager extends Component {
@@ -39,10 +39,7 @@ export class WoolBoxManager extends Component {
             woolBox.init(item, colorConfig, this)
             node.name = node.name + "_" + index
         })
-        const temp = vehicles.map(v => v.colorTypeValue)
-        console.log(temp.length);
-
-        console.log(temp.toString());
+       
         
 
         const allBox = this.getComponentsInChildren(WoolBox)

@@ -52,11 +52,11 @@
   "_props": [
     {
       "effectTex": {
-        "__uuid__": "dc5348b3-1a31-4b64-9e8a-0402356595bb@6c48a",
+        "__uuid__": "4dd987fb-38a5-4b21-87ba-2f0f280ebf98@6c48a",
         "__expectedType__": "cc.Texture2D"
       },
       "bumpMap": {
-        "__uuid__": "31ba9edf-27cc-47d2-9697-a33dd8f821fe@6c48a",
+        "__uuid__": "09e4081e-f1a8-4227-933d-3999d0746375@6c48a",
         "__expectedType__": "cc.Texture2D"
       },
       "mainColor": {
