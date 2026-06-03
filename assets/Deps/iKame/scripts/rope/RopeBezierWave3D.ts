@@ -155,6 +155,7 @@ export class RopeBezierWave3D extends Component {
         }
         this.pointCount = Math.max(2, this.pointCount);
     }
+    
 
     protected onEnable(): void {
         if (this.lineRender == null) {

@@ -69,7 +69,13 @@ export class Spool extends Clickable implements IGridItem {
     public isSpawning: boolean = false;
     @property(Node) public shadow: Node = null
     protected onLoad(): void {
-        this.rope = this.getComponentInChildren(RopeBezierWave3D)!;
+        // KHÔNG ghi đè nếu rope đã được gán (qua @property prefab hoặc đã set ở init).
+        // Ghi đè vô điều kiện bằng getComponentInChildren dễ trả về null/sai trong vài
+        // trạng thái lifecycle (node rope inactive / spool spawn detached) -> thi thoảng
+        // rope không được set/init chuẩn.
+        if (!this.rope) {
+            this.rope = this.getComponentInChildren(RopeBezierWave3D);
+        }
         this.spoolManager = ServiceLocator.get(SpoolManager);
         this.baseRotation = new Vec3(-90, 90, 90)
     }
@@ -97,7 +103,6 @@ export class Spool extends Clickable implements IGridItem {
             this.rope = this.getComponentInChildren(RopeBezierWave3D)!;
         }
         this.setColor(data.colorId);
-
     }
 
     public setColor(colorId: number) {
@@ -330,19 +335,7 @@ export class Spool extends Clickable implements IGridItem {
                 this.isFlying = false
                 this.slot = slot
                 slot.setSpool(this)
-                const itemsInMatchZone = ServiceLocator.get(MatchZone).itemsInMatchZone
-                // Lấy danh sách wool cần add trước khi xóa khỏi itemsInMatchZone
-                const itemsToAdd: RaySlot[] = [];
-                for (const raySlot of itemsInMatchZone) {
-                    if (raySlot.wool && raySlot.wool.color.equals(this.color) && !this.isFull()) {
-                        itemsToAdd.push(raySlot);
-                    }
-                }
-                // Thêm vào queue và xóa khỏi set
-                for (const raySlot of itemsToAdd) {
-                    this.queue.push(raySlot);
-                    itemsInMatchZone.delete(raySlot);
-                }
+                this.enqueueWoolsInZone();
 
                 this.collects()
                 Spool.delay = false
@@ -362,6 +355,28 @@ export class Spool extends Clickable implements IGridItem {
             .start();
     }
 
+    // Gom TẤT CẢ wool cùng màu đang nằm trong vùng match (quét hình học) vào queue
+    // ngay khi spool vào slot. Nhờ đầy đủ từ đầu nên collects() sort theo distance
+    // nhặt đúng cục ở đầu line, không bị nhặt cục giữa rồi giật ngược về đầu khi
+    // cục đầu thật mới được đăng ký vào queue muộn.
+    public enqueueWoolsInZone() {
+        const matchZone = ServiceLocator.get(MatchZone);
+        const inZone = matchZone.getMatchingWoolsInZone(this.color);
+        for (const raySlot of inZone) {
+            if (this.isFull()) break;
+            if (raySlot.isCollecting) continue;
+            if (this.queue.indexOf(raySlot) !== -1) continue;
+            raySlot.isCollecting = true;
+            this.queue.push(raySlot);
+            matchZone.itemsInMatchZone.delete(raySlot);
+        }
+        // [DEBUG] Xóa khi xong.
+        // console.log(
+        //     `[Spool ${this.node.name}] enqueueWoolsInZone | gom được ${this.queue.length} cục` +
+        //     ` | dists=[${this.queue.map(q => q.splineItem?.getDistance().toFixed(1)).join(', ')}]`
+        // );
+    }
+
     public placeInSlot(slot: Slot, onDone?: Function) {
         this.isFlying = false;
         this.isInSlot = true;
@@ -376,17 +391,6 @@ export class Spool extends Clickable implements IGridItem {
         this.slot = slot;
         slot.setSpool(this);
 
-        const itemsInMatchZone = ServiceLocator.get(MatchZone).itemsInMatchZone;
-        const itemsToAdd: RaySlot[] = [];
-        for (const raySlot of itemsInMatchZone) {
-            if (raySlot.wool && raySlot.wool.color.equals(this.color) && !this.isFull()) {
-                itemsToAdd.push(raySlot);
-            }
-        }
-        for (const raySlot of itemsToAdd) {
-            this.queue.push(raySlot);
-            itemsInMatchZone.delete(raySlot);
-        }
 
         this.collects();
         Spool.delay = false;
@@ -399,8 +403,11 @@ export class Spool extends Clickable implements IGridItem {
         };
         if (this.onExitFunc) {
             this.onExitFunc(exitDone);
+            // this.enqueueWoolsInZone();
         } else {
             exitDone();
+            // this.enqueueWoolsInZone();
+
         }
     }
 
@@ -448,16 +455,51 @@ export class Spool extends Clickable implements IGridItem {
         });
     }
 
-    private primeRopeCollectStart() {
-        if (!this.queue.length) return;
+    // Sort queue theo ĐÚNG THỨ TỰ dọc băng chuyền dựa vào vị trí thật trên spline
+    // (getDistance) — KHÔNG dùng world X (sai khi line cong) và KHÔNG dùng
+    // RaySlot.index (index không hề được gán nên vô tác dụng).
+    //
+    // Xử lý WRAP: cụm cục trong zone là 1 cung liền mạch, nhưng nếu zone vắt qua
+    // điểm nối vòng của spline thì distance vừa gần 0 vừa gần totalLength -> sort
+    // thường bị scramble (nhặt cục giữa trước rồi giật). Nên nếu phát hiện cụm
+    // vắt mối nối (max - min > L/2) thì coi cục distance lớn là (distance - L) để
+    // nối liền với cục gần 0.
+    //
+    // distance (đã bù wrap) nhỏ = "đầu" (sắp ra khỏi zone) -> thu trước.
+    // Nếu thấy ngược chiều thì đổi dấu cuối: return kb - ka.
+    private sortQueueByLineOrder() {
+        if (this.queue.length <= 1) return;
 
-        this.queue.sort((a, b) => b.index - a.index);
-        const firstItem = this.queue.find(item => item?.wool);
-        if (!firstItem || !firstItem.wool) return;
+        let L = 0;
+        const dists: number[] = [];
+        for (const item of this.queue) {
+            if (item?.wool && item.splineItem) {
+                const d = item.splineItem.getDistance();
+                dists.push(d);
+                if (L === 0) L = item.splineItem.getTotalLength();
+            }
+        }
+        if (dists.length <= 1 || L <= 0) {
+            this.queue.sort((a, b) => {
+                const ad = a?.wool && a.splineItem ? a.splineItem.getDistance() : Infinity;
+                const bd = b?.wool && b.splineItem ? b.splineItem.getDistance() : Infinity;
+                return ad - bd;
+            });
+            return;
+        }
 
-        this.rope.startPoint.setWorldPosition(firstItem.wool.startPoint.worldPosition);
-        this.rope.endPoint.setWorldPosition(this.getRopeEndTargetByCount(this.count + 1));
-        this.rope.initIfNeeded(true);
+        const min = Math.min(...dists);
+        const max = Math.max(...dists);
+        const wraps = (max - min) > L / 2;
+
+        const key = (item: RaySlot): number => {
+            if (!item?.wool || !item.splineItem) return Infinity;
+            let d = item.splineItem.getDistance();
+            if (wraps && d > L / 2) d -= L;
+            return d;
+        };
+
+        this.queue.sort((a, b) => key(a) - key(b));
     }
 
     public async collects() {
@@ -479,17 +521,20 @@ export class Spool extends Clickable implements IGridItem {
         }
 
         this.rope.node.active = true;
-        this.primeRopeCollectStart();
         this.ropeFillTweenState.value = 0;
         mat.setProperty('fill', 0);
-        await this.animateRopeFill(mat, 1, 0.14);
-        this.startWiggle();
 
         const woolManager = ServiceLocator.get(WoolManager);
         woolManager.setCollecting(true);
 
+        // KHÔNG prime/fill TRƯỚC vòng lặp nữa. Trước đây prime vẽ dây tới wool "đầu"
+        // rồi await fill 0.14s; trong 0.14s đó wool mới trôi vào zone chen vào queue
+        // làm item thu đầu thật sự đổi -> dây bị vẽ tới wool ở giữa rồi giật về wool
+        // đầu. Giờ chọn wool đầu NGAY trong loop (vị trí tươi), set dây đúng nó, và
+        // cho fill chạy SONG SONG với lượt thu đầu -> không lệch, đúng thứ tự.
+        let firstStep = true;
         while (this.queue.length > 0 && !this.isFull()) {
-            this.queue.sort((a, b) => b.index - a.index);
+            this.sortQueueByLineOrder();
             const item = this.queue.shift();
             if (!item || !item.wool) continue;
 
@@ -510,6 +555,25 @@ export class Spool extends Clickable implements IGridItem {
 
             const start = item.wool.startPoint.worldPosition.clone();
             const end = item.wool.endPoint.worldPosition.clone();
+
+            // Bước đầu: đặt dây đúng wool thu đầu (vị trí hiện tại nên prev = pos,
+            // vận tốc = 0 -> không giật), bật fill chạy song song và bắt đầu wiggle.
+            if (firstStep) {
+                // [DEBUG] In ra để chẩn đoán thứ tự thu. Xóa khi xong.
+                const L = item.splineItem ? item.splineItem.getTotalLength() : 0;
+                // console.log(
+                //     `[Spool ${this.node.name}] start collect | queueLen(còn lại)=${this.queue.length}` +
+                //     ` | totalLen=${L.toFixed(1)} | pick dist=${item.splineItem?.getDistance().toFixed(1)}` +
+                //     ` | còn lại dists=[${this.queue.map(q => q.splineItem?.getDistance().toFixed(1)).join(', ')}]`
+                // );
+
+                this.rope.startPoint.setWorldPosition(start);
+                this.rope.endPoint.setWorldPosition(this.getRopeEndTargetByCount(this.count));
+                // this.rope.initIfNeeded(true);
+                this.animateRopeFill(mat, 1, 0.14);
+                this.startWiggle();
+                firstStep = false;
+            }
             // --- LOGIC SO LE ---
             // Tính toán độ lệch (offset) sang hai bên
             this.flipScaleDirection = !this.flipScaleDirection;

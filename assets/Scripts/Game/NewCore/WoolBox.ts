@@ -127,10 +127,12 @@ export class WoolBox extends Clickable {
             this._reservedSlot = null;
             return;
         }
+         this._spool.setColor(this._data.colorTypeValue)
+             this._spool.queue.sort((a, b) => b.index - a.index);
         // Now set the spool when actually placing it
         slot.setSpool(this._spool);
         this._spool.node.setParent(this.spoolManager.node);
-
+        this._spool.rope.initIfNeeded(true)
         // The box ended its travel sitting on the slot, so morph it in place:
         // it squashes, collapses into itself, and the spool springs out of the
         // burst with a little hop before settling into the slot.
@@ -177,7 +179,11 @@ export class WoolBox extends Clickable {
             // ...and settle to rest
             .to(0.1, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
             .call(() => {
-                this._spool.placeInSlot(slot, () => { });
+                this._spool.placeInSlot(slot, () => { 
+                    this._spool.enqueueWoolsInZone()
+                this._spool.rope.initIfNeeded(true)
+                    
+                });
             })
             .start();
 

@@ -1,4 +1,4 @@
-import { _decorator, BoxCollider, Component, ITriggerEvent, Node, tween, Vec3, Quat, PhysicsSystem, Vec2 } from 'cc';
+import { _decorator, BoxCollider, Color, Component, ITriggerEvent, Node, tween, Vec3, Quat, PhysicsSystem, Vec2 } from 'cc';
 import { SlotManager } from './SlotManager';
 import { ServiceLocator } from '../ServiceLocator';
 
@@ -18,6 +18,12 @@ export class MatchZone extends Component {
     private collider: BoxCollider;
 
     public itemsInMatchZone: Set<RaySlot> = new Set<RaySlot>
+
+    // Tập wool ĐANG THẬT SỰ nằm trong zone, theo dõi bằng chính trigger enter/exit
+    // (đúng theo va chạm collider). Khác itemsInMatchZone ở chỗ: KHÔNG bị xóa khi
+    // wool được gán cho 1 spool. Dùng để spool mới gom đầy đủ cục đang ở trong zone
+    // ngay khi vào slot (kể cả cục ở mép đầu mà scan theo tâm dễ bỏ sót).
+    public woolsInZone: Set<RaySlot> = new Set<RaySlot>()
 
 
     protected start() {
@@ -44,6 +50,7 @@ export class MatchZone extends Component {
         raySlot.canCollect = false;
         raySlot.isCollecting = false;
         this.itemsInMatchZone.delete(raySlot);
+        this.woolsInZone.delete(raySlot);
 
         // BỔ SUNG: Tìm xem có Spool nào đang chứa raySlot này trong queue không và xóa nó đi
         const allSlots = this.slotManager.slots;
@@ -58,11 +65,13 @@ export class MatchZone extends Component {
     }
 
     onTriggerEnter(event: ITriggerEvent) {
-        if (this.gameManager.state !== GameState.PLAY) return
-
-
         const raySlot = event.otherCollider.getComponent(RaySlot);
         if (!raySlot || !raySlot.wool) return;
+        // Luôn track sự hiện diện trong zone, KỂ CẢ trước khi vào PLAY, để spool
+        // mới gom được cả cục đã vào zone từ lúc loading.
+        this.woolsInZone.add(raySlot);
+
+        if (!this.gameManager || this.gameManager.state !== GameState.PLAY) return;
         if (raySlot.isCollecting) return;
 
         raySlot.canCollect = true;
@@ -95,6 +104,51 @@ export class MatchZone extends Component {
         this.itemsInMatchZone.add(raySlot);
         this.checkExistingItems();
     }
+    /**
+     * Lấy TẤT CẢ wool cùng màu đang thật sự nằm trong zone (theo woolsInZone — tập
+     * được cập nhật bằng chính trigger enter/exit nên khớp va chạm collider, không
+     * bỏ sót cục ở mép như cách quét theo tâm). Dùng khi 1 spool vừa vào slot để
+     * gom đầy đủ queue ngay lập tức. Bỏ qua cục đang được spool khác thu.
+     */
+    public getMatchingWoolsInZone(color: Color): RaySlot[] {
+        const seen = new Set<RaySlot>();
+        const result: RaySlot[] = [];
+
+        const tryAdd = (raySlot: RaySlot) => {
+            if (!raySlot || !raySlot.wool) return;
+            if (raySlot.isCollecting) return;
+            if (!raySlot.wool.color.equals(color)) return;
+            if (seen.has(raySlot)) return;
+            seen.add(raySlot);
+            result.push(raySlot);
+        };
+
+        // 1) Trigger-exact: cục đã enter zone (khớp va chạm collider, kể cả ở mép).
+        for (const raySlot of this.woolsInZone) tryAdd(raySlot);
+
+        // 2) Safety-net hình học: cục nằm trong box nhưng chưa từng bắn onTriggerEnter
+        //    (spawn sẵn trong zone). Check theo tâm nên có thể sót cục sát mép, nhưng
+        //    những cục đó thường đã nằm trong woolsInZone ở bước 1.
+        if (!this.woolManager) this.woolManager = ServiceLocator.get(WoolManager);
+        if (this.collider && this.woolManager) {
+            const half = this.collider.size;
+            const center = this.collider.center;
+            const local = new Vec3();
+            for (const raySlot of this.woolManager.slots) {
+                if (!raySlot || !raySlot.wool) continue;
+                this.node.inverseTransformPoint(local, raySlot.node.worldPosition);
+                local.subtract(center);
+                if (Math.abs(local.x) <= half.x * 0.5 &&
+                    Math.abs(local.y) <= half.y * 0.5 &&
+                    Math.abs(local.z) <= half.z * 0.5) {
+                    tryAdd(raySlot);
+                }
+            }
+        }
+
+        return result;
+    }
+
     public checkExistingItems() {
         if (this.itemsInMatchZone.size === 0) return;
 

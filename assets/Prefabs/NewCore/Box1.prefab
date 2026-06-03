@@ -249,7 +249,7 @@
     ],
     "value": {
       "__type__": "cc.Vec3",
-      "x": 0.65,
+      "x": 0.8,
       "y": 0.65,
       "z": 0.65
     }
@@ -546,9 +546,9 @@
     },
     "_size": {
       "__type__": "cc.Vec3",
-      "x": 1.2,
-      "y": 1,
-      "z": 2
+      "x": 1.5,
+      "y": 1.2,
+      "z": 2.5
     },
     "_id": ""
   },
@@ -580,6 +580,8 @@
     "hitForwardDistance": 0.45,
     "hitTargetPushDistance": 0.18,
     "impactGap": 0.05,
+    "cornerRadius": 10,
+    "cornerSegments": 100,
     "_id": ""
   },
   {
@@ -660,7 +662,7 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 0.65,
+      "x": 0.8,
       "y": 0.65,
       "z": 0.65
     },
